@@ -4,7 +4,7 @@ spring:
   application:
     name: learning-assistant
   datasource:
-    url: jdbc:postgresql://localhost:5432/learning_assistant
+    url: ${DATASOURCE_URL}
     username: learning
     password: learning
     hikari:
