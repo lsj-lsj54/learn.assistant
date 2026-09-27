@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: learning-assistant
+  datasource:
+    url: jdbc:postgresql://localhost:5432/learning_assistant
+    username: learning
+    password: learning
+  ai:
+    # 没有密钥和嵌入模型时不装配模型，避免空工程启动失败。
+    model:
+      chat: none
+      embedding: none
+    mcp:
+      client:
+        enabled: false
+
+mybatis-plus:
+  mapper-locations: classpath:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
