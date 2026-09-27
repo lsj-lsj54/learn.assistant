@@ -12,9 +12,18 @@ spring:
   ai:
     model:
       chat: deepseek
-      embedding: none
+      embedding: ollama
+    ollama:
+      base-url: http://localhost:11434
+      embedding:
+        options:
+          model: bge-m3
     vectorstore:
-      type: none
+      type: pgvector
+      pgvector:
+        initialize-schema: true
+        dimensions: 1024
+        max-document-batch-size: 100
     deepseek:
       api-key: ${DEEPSEEK_API_KEY}
       chat:
@@ -24,6 +33,20 @@ spring:
     mcp:
       client:
         enabled: false
+
+learn:
+  rag:
+    chunk:
+      chunk-size: 500
+      min-chunk-size-chars: 100
+      min-chunk-length-to-embed: 5
+      max-num-chunks: 10000
+      keep-separator: true
+      punctuation: "。！？；\n.!?;"
+    batch:
+      max-token-count: 8192
+      reserve-percentage: 0.1
+      encoding: CL100K_BASE
 
 mybatis-plus:
   mapper-locations: classpath:/mapper/**/*.xml
