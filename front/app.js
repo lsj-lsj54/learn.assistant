@@ -106,6 +106,10 @@ function render() {
 
 function scrollToLatest() {
     const snap = () => {
+        const latest = messagesEl.lastElementChild;
+        if (latest) {
+            latest.scrollIntoView({ block: "end" });
+        }
         stage.scrollTop = stage.scrollHeight;
     };
     snap();

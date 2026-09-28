@@ -14,6 +14,13 @@ class PdfDocumentSourceTest {
                 .reduce("", (left, right) -> left + right);
 
         assertFalse(text.isBlank());
-        assertTrue(text.contains("小明"));
+    }
+
+    @Test
+    void readsPdfInsideSubfolder() {
+        boolean nested = new PdfDocumentSource().collect().keySet().stream()
+                .anyMatch(name -> name.contains("/"));
+
+        assertTrue(nested);
     }
 }

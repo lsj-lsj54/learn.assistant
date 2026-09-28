@@ -16,6 +16,7 @@
 html, body {
     margin: 0;
     height: 100%;
+    overflow: hidden;
     font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
     color: var(--text);
     background: #000;
@@ -27,6 +28,8 @@ body {
 
 .sidebar {
     width: 260px;
+    height: 100%;
+    min-height: 0;
     flex: none;
     display: flex;
     flex-direction: column;
@@ -43,14 +46,17 @@ body {
 }
 
 .new-chat {
+    flex-shrink: 0;
     height: 40px;
     border-radius: 12px;
-    background: var(--accent-soft);
+    background: #111;
     color: var(--accent);
+    border: 1px solid #333;
 }
 
 .chat-list {
     flex: 1;
+    min-height: 0;
     overflow: auto;
     display: flex;
     flex-direction: column;
@@ -100,13 +106,15 @@ body {
 }
 
 .settings {
+    flex-shrink: 0;
     display: grid;
     gap: 6px;
     margin: 0;
-    padding: 8px 4px 0;
+    padding: 10px 4px 0;
     border-top: 1px solid var(--line);
     color: var(--muted);
     font-size: 12px;
+    line-height: 1.4;
 }
 
 .settings div {
@@ -125,12 +133,13 @@ body {
 }
 
 .import-pdf, .clear-vectors {
+    flex-shrink: 0;
     min-height: 36px;
     padding: 8px 10px;
     border-radius: 10px;
-    background: #000;
-    border: 1px solid var(--line);
-    color: var(--muted);
+    background: #111;
+    border: 1px solid #333;
+    color: var(--text);
 }
 
 .clear-vectors {
@@ -140,6 +149,8 @@ body {
 .main {
     flex: 1;
     min-width: 0;
+    min-height: 0;
+    height: 100%;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -162,6 +173,7 @@ body {
 
 .stage {
     flex: 1;
+    min-height: 0;
     overflow: auto;
     display: flex;
     flex-direction: column;
@@ -198,7 +210,7 @@ body {
     max-width: min(520px, 85%);
     padding: 10px 14px;
     border-radius: 16px;
-    background: var(--bubble);
+    background: #242424;
 }
 
 .message.assistant {
@@ -216,13 +228,9 @@ body {
     align-items: flex-end;
     gap: 8px;
     padding: 10px 12px;
-    border: 1px solid var(--line);
+    border: 1px solid #3a3a3a;
     border-radius: 24px;
     background: #000;
-}
-
-body.empty .composer {
-    margin-bottom: 18vh;
 }
 
 textarea {
@@ -249,7 +257,8 @@ textarea {
 }
 
 .send:disabled {
-    background: #c5c8d4;
+    background: #2a2a2a;
+    color: #777;
     cursor: default;
 }
 
