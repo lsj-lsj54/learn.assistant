@@ -41,7 +41,7 @@ spring:
 
 learn:
   chat:
-    system-prompt: "你是学习助手，用简洁的中文回答。"
+    system-prompt: "你是学习助手，用简洁的中文回答。记住同一段对话里用户说过的信息，并在后续问题中使用。"
     max-memory-messages: 20
   paths:
     pdf-dir: src/main/resources/pdf

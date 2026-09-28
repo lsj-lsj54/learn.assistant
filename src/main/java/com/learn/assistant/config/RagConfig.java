@@ -3,15 +3,14 @@ package com.learn.assistant.config;
 import com.knuddels.jtokkit.api.EncodingType;
 import com.learn.assistant.properties.RagProperties;
 import com.learn.assistant.rag.BuiltinQueryTransformers;
+import com.learn.assistant.rag.ConversationAwareQueryAugmenter;
 import com.learn.assistant.rag.QueryTransformerContributor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
-import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
 import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
@@ -86,11 +85,7 @@ public class RagConfig {
                         .similarityThreshold(retrieval.getSimilarityThreshold())
                         .topK(retrieval.getTopK())
                         .build())
-                .queryAugmenter(ContextualQueryAugmenter.builder()
-                        .allowEmptyContext(retrieval.isAllowEmptyContext())
-                        .promptTemplate(new PromptTemplate(RagPrompts.CONTEXT))
-                        .emptyContextPromptTemplate(new PromptTemplate(RagPrompts.EMPTY_CONTEXT))
-                        .build())
+                .queryAugmenter(new ConversationAwareQueryAugmenter(retrieval.isAllowEmptyContext()))
                 .build();
     }
 

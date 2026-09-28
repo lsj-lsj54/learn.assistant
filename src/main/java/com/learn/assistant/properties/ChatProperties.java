@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "learn.chat")
 public class ChatProperties {
 
-    public static final String DEFAULT_SYSTEM_PROMPT = "你是学习助手，用简洁的中文回答。";
+    public static final String DEFAULT_SYSTEM_PROMPT = "你是学习助手，用简洁的中文回答。记住同一段对话里用户说过的信息，并在后续问题中使用。";
 
     public static final int DEFAULT_MAX_MEMORY_MESSAGES = 20;
 
