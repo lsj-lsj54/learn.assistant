@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习助手</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <aside class="sidebar">
+        <button class="new-chat" id="newChat" type="button">开启新对话</button>
+        <div class="chat-list" id="chatList"></div>
+        <button class="import-pdf" id="importPdf" type="button">导入 PDF 资料</button>
+    </aside>
+    <main class="main">
+        <header class="topbar">
+            <button class="menu" id="menu" type="button" aria-label="打开会话列表">菜单</button>
+            <span>学习助手</span>
+        </header>
+        <section class="stage" id="stage">
+            <div class="welcome" id="welcome">
+                <h1>今天有什么可以帮你的？</h1>
+            </div>
+            <div class="messages" id="messages" hidden></div>
+        </section>
+        <form class="composer" id="composer">
+            <textarea id="input" rows="1" placeholder="给学习助手发送消息"></textarea>
+            <button class="send" id="send" type="submit" aria-label="发送">↑</button>
+        </form>
+        <p class="hint" id="hint"></p>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
