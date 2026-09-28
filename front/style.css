@@ -36,7 +36,7 @@ body {
     border-right: 1px solid var(--line);
 }
 
-.new-chat, .import-pdf, .send, .menu {
+.new-chat, .import-pdf, .clear-vectors, .send, .menu {
     border: 0;
     cursor: pointer;
     font: inherit;
@@ -74,13 +74,17 @@ body {
     background: #eceef2;
 }
 
-.import-pdf {
+.import-pdf, .clear-vectors {
     min-height: 36px;
     padding: 8px 10px;
     border-radius: 10px;
     background: #fff;
     border: 1px solid var(--line);
     color: var(--muted);
+}
+
+.clear-vectors {
+    color: var(--danger);
 }
 
 .main {

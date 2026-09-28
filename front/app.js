@@ -26,6 +26,7 @@ document.querySelector("#menu").addEventListener("click", () => {
 });
 
 document.querySelector("#importPdf").addEventListener("click", importPdf);
+document.querySelector("#clearVectors").addEventListener("click", clearVectors);
 
 composer.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -139,6 +140,23 @@ async function importPdf() {
             throw new Error(body.message || body.error || "导入失败");
         }
         setHint("已导入，切成 " + (body.chunkCount ?? 0) + " 段");
+    } catch (error) {
+        setHint(error.message || "无法连接后端", true);
+    }
+}
+
+async function clearVectors() {
+    if (!window.confirm("只清空已导入的资料，历史对话会保留。继续吗？")) {
+        return;
+    }
+    setHint("正在清空资料库");
+    try {
+        const response = await fetch(apiBase + "/api/documents", { method: "DELETE" });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(body.message || body.error || "清空失败");
+        }
+        setHint("已清空 " + (body.deletedCount ?? 0) + " 条资料");
     } catch (error) {
         setHint(error.message || "无法连接后端", true);
     }

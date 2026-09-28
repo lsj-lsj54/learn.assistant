@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreProperties;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -22,18 +24,35 @@ public class DocumentIngestService implements DocumentIngestor {
 
     private final VectorStore vectorStore;
 
-    private final Object ingestLock = new Object();
+    private final JdbcTemplate jdbcTemplate;
+
+    private final PgVectorStoreProperties vectorStoreProperties;
+
+    private final Object storeLock = new Object();
 
     public DocumentIngestService(List<DocumentSource> documentSources, TokenTextSplitter tokenTextSplitter,
-            VectorStore vectorStore) {
+            VectorStore vectorStore, JdbcTemplate jdbcTemplate, PgVectorStoreProperties vectorStoreProperties) {
         this.documentSources = List.copyOf(documentSources);
         this.tokenTextSplitter = tokenTextSplitter;
         this.vectorStore = vectorStore;
+        this.jdbcTemplate = jdbcTemplate;
+        this.vectorStoreProperties = vectorStoreProperties;
+    }
+
+    @Override
+    public int clear() {
+        synchronized (storeLock) {
+            String sql = "DELETE FROM " + identifier(vectorStoreProperties.getSchemaName()) + "."
+                    + identifier(vectorStoreProperties.getTableName());
+            int deleted = jdbcTemplate.update(sql);
+            log.info("已清空向量 {} 条", deleted);
+            return deleted;
+        }
     }
 
     @Override
     public int ingest() {
-        synchronized (ingestLock) {
+        synchronized (storeLock) {
             List<Document> documents = readAll();
             if (documents.isEmpty()) {
                 log.info("没有可导入的文档");
@@ -56,6 +75,13 @@ public class DocumentIngestService implements DocumentIngestor {
             documents.addAll(batch);
         }
         return documents;
+    }
+
+    private static String identifier(String name) {
+        if (name == null || !name.matches("[A-Za-z_][A-Za-z0-9_]*")) {
+            throw new IllegalArgumentException("向量表名不合法");
+        }
+        return name;
     }
 
     private static List<Document> read(DocumentSource source) {
