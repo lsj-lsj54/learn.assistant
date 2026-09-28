@@ -113,7 +113,7 @@ async function submit() {
         const response = await fetch(apiBase + "/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: text })
+            body: JSON.stringify({ message: text, conversationId: currentId })
         });
         const body = await response.json().catch(() => ({}));
         if (!response.ok) {

@@ -12,7 +12,7 @@ public class ChatService {
         this.learningChatClient = learningChatClient;
     }
 
-    public String reply(String message) {
-        return learningChatClient.chat(message);
+    public String reply(String message, String conversationId) {
+        return learningChatClient.chat(message, conversationId);
     }
 }

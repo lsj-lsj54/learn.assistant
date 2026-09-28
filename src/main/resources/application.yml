@@ -33,6 +33,11 @@ spring:
     mcp:
       client:
         enabled: false
+    chat:
+      memory:
+        repository:
+          jdbc:
+            initialize-schema: always
 
 learn:
   rag:
