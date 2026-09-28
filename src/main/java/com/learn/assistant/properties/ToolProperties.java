@@ -9,6 +9,10 @@ public class ToolProperties {
 
     private String bochaApiKey = "";
 
+    private int scrapeMaxChars = 8_000;
+
+    private int readMaxChars = 100_000;
+
     public String getPdfFont() {
         return pdfFont;
     }
@@ -23,5 +27,25 @@ public class ToolProperties {
 
     public void setBochaApiKey(String bochaApiKey) {
         this.bochaApiKey = bochaApiKey;
+    }
+
+    public int getScrapeMaxChars() {
+        return scrapeMaxChars;
+    }
+
+    public void setScrapeMaxChars(int scrapeMaxChars) {
+        this.scrapeMaxChars = scrapeMaxChars;
+    }
+
+    public int getReadMaxChars() {
+        return readMaxChars;
+    }
+
+    public void setReadMaxChars(int readMaxChars) {
+        this.readMaxChars = readMaxChars;
+    }
+
+    public static int positive(int value, int fallback) {
+        return value > 0 ? value : fallback;
     }
 }

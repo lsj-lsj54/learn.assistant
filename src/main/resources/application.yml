@@ -52,6 +52,8 @@ learn:
   tools:
     pdf-font: C:/Windows/Fonts/simhei.ttf
     bocha-api-key: ${BOCHA_API_KEY:}
+    scrape-max-chars: ${LEARN_TOOLS_SCRAPE_MAX_CHARS:8000}
+    read-max-chars: ${LEARN_TOOLS_READ_MAX_CHARS:100000}
   rag:
     retrieval:
       similarity-threshold: 0.5

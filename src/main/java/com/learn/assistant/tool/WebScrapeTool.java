@@ -1,8 +1,10 @@
 package com.learn.assistant.tool;
 
+import com.learn.assistant.properties.ToolProperties;
 import org.jsoup.Jsoup;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -11,12 +13,18 @@ import org.springframework.stereotype.Component;
 @Order(4)
 public class WebScrapeTool {
 
-    private static final int MAX_TEXT_LENGTH = 8_000;
-
     private final PublicHttp publicHttp;
 
+    private final int maxTextLength;
+
     public WebScrapeTool(PublicHttp publicHttp) {
+        this(publicHttp, new ToolProperties());
+    }
+
+    @Autowired
+    public WebScrapeTool(PublicHttp publicHttp, ToolProperties toolProperties) {
         this.publicHttp = publicHttp;
+        this.maxTextLength = ToolProperties.positive(toolProperties.getScrapeMaxChars(), 8_000);
     }
 
     @Tool(description = "抓取网页正文，去掉脚本和样式后返回文本。不能从页面得到文件地址。下载文件请把直链交给下载工具。")
@@ -30,8 +38,8 @@ public class WebScrapeTool {
                     .get()
                     .body()
                     .text();
-            if (text.length() > MAX_TEXT_LENGTH) {
-                return text.substring(0, MAX_TEXT_LENGTH) + "\n...内容已截断";
+            if (text.length() > maxTextLength) {
+                return text.substring(0, maxTextLength) + "\n...内容已截断";
             }
             return text.isBlank() ? "页面没有可提取的文本" : text;
         }

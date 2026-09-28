@@ -1,7 +1,9 @@
 package com.learn.assistant.tool;
 
+import com.learn.assistant.properties.ToolProperties;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -16,12 +18,18 @@ import java.util.stream.Stream;
 @Order(1)
 public class FileOperationTool {
 
-    private static final int MAX_TEXT_LENGTH = 100_000;
-
     private final ProjectPaths projectPaths;
 
+    private final int maxTextLength;
+
     public FileOperationTool(ProjectPaths projectPaths) {
+        this(projectPaths, new ToolProperties());
+    }
+
+    @Autowired
+    public FileOperationTool(ProjectPaths projectPaths, ToolProperties toolProperties) {
         this.projectPaths = projectPaths;
+        this.maxTextLength = ToolProperties.positive(toolProperties.getReadMaxChars(), 100_000);
     }
 
     @Tool(description = "列出项目目录中的文件和子目录。路径相对于项目根目录，空字符串表示项目根目录。")
@@ -50,8 +58,8 @@ public class FileOperationTool {
                 return "文件不存在: " + file;
             }
             String text = Files.readString(file, StandardCharsets.UTF_8);
-            if (text.length() > MAX_TEXT_LENGTH) {
-                return text.substring(0, MAX_TEXT_LENGTH) + "\n...内容已截断";
+            if (text.length() > maxTextLength) {
+                return text.substring(0, maxTextLength) + "\n...内容已截断";
             }
             return text;
         }
