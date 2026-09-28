@@ -7,6 +7,7 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,6 +29,16 @@ class PdfWriteToolTest {
             String text = new PDFTextStripper().getText(document);
             assertTrue(text.contains("小明"));
         }
+    }
+
+    @Test
+    void writePdfCreatesSubfolder() {
+        PdfWriteTool tool = new PdfWriteTool(new TempProjectPaths(tempDir), new ToolProperties());
+
+        String result = tool.writePdf("课程/note", "正文");
+
+        assertTrue(result.startsWith("已写入"));
+        assertTrue(Files.exists(tempDir.resolve("src/main/resources/pdf/课程/note.pdf")));
     }
 
     @Test

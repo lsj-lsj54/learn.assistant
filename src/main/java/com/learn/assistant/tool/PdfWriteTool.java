@@ -38,18 +38,15 @@ public class PdfWriteTool {
         this.chineseFont = Path.of(toolProperties.getPdfFont());
     }
 
-    @Tool(description = "把文本写成 PDF，保存到项目的 src/main/resources/pdf 目录。适合保存大模型生成的文本或整理后的资料。")
+    @Tool(description = "把文本写成 PDF，保存到项目的 src/main/resources/pdf 目录。文件名可以带子文件夹，例如 课程/note.pdf，没有该文件夹时会新建。")
     public String writePdf(
-            @ToolParam(description = "文件名，例如 note.pdf") String fileName,
+            @ToolParam(description = "保存路径，例如 note.pdf 或 课程/note.pdf") String fileName,
             @ToolParam(description = "要写入 PDF 的正文") String content) {
         try {
-            String safeName = sanitizeFileName(fileName);
-            if (!safeName.toLowerCase().endsWith(".pdf")) {
-                safeName = safeName + ".pdf";
-            }
+            String safeName = withPdfExtension(projectPaths.safeRelative(fileName));
             Path directory = projectPaths.pdfDirectory();
-            Files.createDirectories(directory);
             Path target = projectPaths.resolveWithin(directory, safeName);
+            Files.createDirectories(target.getParent());
             write(target, content == null ? "" : content);
             return "已写入 " + target;
         }
@@ -137,14 +134,13 @@ public class PdfWriteTool {
         return lines;
     }
 
-    private static String sanitizeFileName(String fileName) {
-        if (fileName == null || fileName.isBlank()) {
-            throw new IllegalArgumentException("文件名不能为空");
+    private static String withPdfExtension(String relativePath) {
+        int slash = relativePath.lastIndexOf('/');
+        String parent = slash >= 0 ? relativePath.substring(0, slash + 1) : "";
+        String file = slash >= 0 ? relativePath.substring(slash + 1) : relativePath;
+        if (!file.toLowerCase().endsWith(".pdf")) {
+            file = file + ".pdf";
         }
-        String name = Path.of(fileName).getFileName().toString().trim();
-        if (name.isBlank() || ".".equals(name) || "..".equals(name)) {
-            throw new IllegalArgumentException("文件名不合法");
-        }
-        return name;
+        return parent + file;
     }
 }

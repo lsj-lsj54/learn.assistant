@@ -1,5 +1,7 @@
 package com.learn.assistant.tool;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.nio.file.Path;
 
 public class ProjectPaths {
@@ -23,6 +25,40 @@ public class ProjectPaths {
 
     public Path downloadDirectory() {
         return root().resolve(downloadRelative);
+    }
+
+    public String safeRelative(String raw) {
+        if (raw == null || raw.isBlank()) {
+            throw new IllegalArgumentException("文件名不能为空");
+        }
+        String unified = raw.trim().replace('\\', '/');
+        while (unified.startsWith("/")) {
+            unified = unified.substring(1);
+        }
+        if (unified.matches("^[A-Za-z]:.*")) {
+            throw new IllegalArgumentException("文件名不合法");
+        }
+        List<String> kept = new ArrayList<>();
+        for (String piece : unified.split("/")) {
+            if (piece.isBlank() || ".".equals(piece)) {
+                continue;
+            }
+            if ("..".equals(piece)) {
+                throw new IllegalArgumentException("路径超出允许目录");
+            }
+            String cleaned = piece.replaceAll("[\\\\:*?\"<>|]", "_").trim();
+            if (cleaned.isBlank() || ".".equals(cleaned) || "..".equals(cleaned)) {
+                throw new IllegalArgumentException("文件名不合法");
+            }
+            if (".env".equals(cleaned)) {
+                throw new IllegalArgumentException("不允许操作 .env");
+            }
+            kept.add(cleaned);
+        }
+        if (kept.isEmpty()) {
+            throw new IllegalArgumentException("文件名不能为空");
+        }
+        return String.join("/", kept);
     }
 
     public Path resolveWithin(Path base, String relativePath) {

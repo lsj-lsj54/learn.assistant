@@ -53,7 +53,7 @@ public class WebSearchTool {
         }
     }
 
-    @Tool(description = "用博查 Web Search API 联网搜索。返回网页链接，以及可直接下载的图片直链。用户要保存图片时，只把图片直链交给下载工具，不要改去抓取网页。")
+    @Tool(description = "用博查 Web Search API 联网搜索。返回网页链接和文件直链。用户要保存文件时，把直链交给下载工具：PDF 会进 pdf 目录，其他资源进 res。不要改去抓取网页。")
     public String search(@ToolParam(description = "搜索关键词") String query) {
         if (apiKey.isBlank()) {
             return "搜索失败: 未配置博查 API Key";
