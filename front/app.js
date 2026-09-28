@@ -9,6 +9,7 @@ const input = document.querySelector("#input");
 const send = document.querySelector("#send");
 const hint = document.querySelector("#hint");
 const sidebar = document.querySelector(".sidebar");
+const stage = document.querySelector("#stage");
 
 let chats = loadChats();
 let currentId = chats[0]?.id ?? null;
@@ -47,6 +48,7 @@ input.addEventListener("input", () => {
 });
 
 render();
+loadSettings();
 
 function loadChats() {
     try {
@@ -75,10 +77,12 @@ function render() {
             item.textContent = message.content;
             messagesEl.appendChild(item);
         }
-        messagesEl.scrollTop = messagesEl.scrollHeight;
+        scrollToLatest();
     }
     chatList.innerHTML = "";
     for (const item of chats) {
+        const row = document.createElement("div");
+        row.className = "chat-row";
         const button = document.createElement("button");
         button.type = "button";
         button.className = "chat-item" + (item.id === currentId ? " active" : "");
@@ -88,9 +92,27 @@ function render() {
             sidebar.classList.remove("open");
             render();
         });
-        chatList.appendChild(button);
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "chat-delete";
+        remove.setAttribute("aria-label", "删除对话");
+        remove.textContent = "×";
+        remove.addEventListener("click", () => deleteChat(item.id));
+        row.append(button, remove);
+        chatList.appendChild(row);
     }
     send.disabled = sending || input.value.trim() === "";
+}
+
+function scrollToLatest() {
+    const snap = () => {
+        stage.scrollTop = stage.scrollHeight;
+    };
+    snap();
+    requestAnimationFrame(() => {
+        snap();
+        requestAnimationFrame(snap);
+    });
 }
 
 async function submit() {
@@ -159,6 +181,43 @@ async function clearVectors() {
         setHint("已清空 " + (body.deletedCount ?? 0) + " 条资料");
     } catch (error) {
         setHint(error.message || "无法连接后端", true);
+    }
+}
+
+async function deleteChat(id) {
+    const chat = chats.find((item) => item.id === id);
+    if (!chat || !window.confirm("删除「" + chat.title + "」？")) {
+        return;
+    }
+    chats = chats.filter((item) => item.id !== id);
+    if (currentId === id) {
+        currentId = chats[0]?.id ?? null;
+    }
+    saveChats();
+    render();
+    try {
+        const response = await fetch(apiBase + "/api/chat/" + encodeURIComponent(id), { method: "DELETE" });
+        if (!response.ok) {
+            throw new Error();
+        }
+    } catch {
+        setHint("对话已从列表删除，服务器记录未能清除", true);
+    }
+}
+
+async function loadSettings() {
+    try {
+        const response = await fetch(apiBase + "/api/settings");
+        if (!response.ok) {
+            throw new Error();
+        }
+        const body = await response.json();
+        document.querySelector("#scrapeMax").textContent = body.scrapeMaxChars + " 字";
+        document.querySelector("#readMax").textContent = body.readMaxChars + " 字";
+        document.querySelector("#memoryMax").textContent = body.maxMemoryMessages + " 条";
+        document.querySelector("#emptyContext").textContent = body.allowEmptyContext ? "允许" : "不允许";
+    } catch {
+        document.querySelector("#scrapeMax").textContent = "未连接";
     }
 }
 

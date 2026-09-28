@@ -4,6 +4,8 @@ import com.learn.assistant.domain.dto.ChatRequest;
 import com.learn.assistant.domain.vo.ChatResponse;
 import com.learn.assistant.service.ChatService;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,5 +24,10 @@ public class ChatController {
     @PostMapping
     public ChatResponse chat(@Valid @RequestBody ChatRequest request) {
         return new ChatResponse(chatService.reply(request.message(), request.conversationId()));
+    }
+
+    @DeleteMapping("/{conversationId}")
+    public void delete(@PathVariable String conversationId) {
+        chatService.clear(conversationId);
     }
 }
