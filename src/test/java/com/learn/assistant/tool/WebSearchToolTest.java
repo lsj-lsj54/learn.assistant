@@ -57,6 +57,7 @@ class WebSearchToolTest {
                 }
                 """, objectMapper);
 
+        assertTrue(result.indexOf("图片直链") < result.indexOf("网页"));
         assertTrue(result.contains("网页：\n介绍页\nhttps://example.com/page"));
         assertTrue(result.contains("图片直链：\n威龙\nhttps://img.example.com/a.jpg"));
         assertFalse(result.contains("hostPageUrl"));

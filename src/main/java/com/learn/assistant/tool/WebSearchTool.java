@@ -3,8 +3,12 @@ package com.learn.assistant.tool;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learn.assistant.properties.ToolProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -21,9 +25,11 @@ public class WebSearchTool {
 
     static final String ENDPOINT = "https://api.bochaai.com/v1/web-search";
 
+    private static final Logger log = LoggerFactory.getLogger(WebSearchTool.class);
+
     private static final int RESULT_LIMIT = 5;
 
-    private final ToolProperties toolProperties;
+    private final String apiKey;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -33,13 +39,23 @@ public class WebSearchTool {
             .build();
 
     public WebSearchTool(ToolProperties toolProperties) {
-        this.toolProperties = toolProperties;
+        this(toolProperties, "");
     }
 
-    @Tool(description = "联网搜索，返回网页标题、链接，以及可直接下载的图片直链。用户要保存图片时，把图片直链交给下载工具。")
+    @Autowired
+    public WebSearchTool(ToolProperties toolProperties, @Value("${BOCHA_API_KEY:}") String bochaApiKey) {
+        this.apiKey = firstNonBlank(toolProperties.getBochaApiKey(), bochaApiKey);
+        if (this.apiKey.isBlank()) {
+            log.warn("博查 Web Search API 未读到 BOCHA_API_KEY");
+        }
+        else {
+            log.info("博查 Web Search API 已配置");
+        }
+    }
+
+    @Tool(description = "用博查 Web Search API 联网搜索。返回网页链接，以及可直接下载的图片直链。用户要保存图片时，只把图片直链交给下载工具，不要改去抓取网页。")
     public String search(@ToolParam(description = "搜索关键词") String query) {
-        String apiKey = toolProperties.getBochaApiKey();
-        if (apiKey == null || apiKey.isBlank()) {
+        if (apiKey.isBlank()) {
             return "搜索失败: 未配置博查 API Key";
         }
         try {
@@ -85,9 +101,16 @@ public class WebSearchTool {
             return "没有搜索到结果";
         }
         StringBuilder result = new StringBuilder();
-        appendLinks(result, "网页", pages, "url");
         appendLinks(result, "图片直链", images, "contentUrl", "url", "thumbnailUrl");
+        appendLinks(result, "网页", pages, "url");
         return result.isEmpty() ? "没有搜索到结果" : result.toString().trim();
+    }
+
+    private static String firstNonBlank(String primary, String fallback) {
+        if (primary != null && !primary.isBlank()) {
+            return primary.trim();
+        }
+        return fallback == null ? "" : fallback.trim();
     }
 
     private static void appendLinks(StringBuilder result, String heading, JsonNode items, String... urlFields) {

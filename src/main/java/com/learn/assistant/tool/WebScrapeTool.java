@@ -19,7 +19,7 @@ public class WebScrapeTool {
         this.publicHttp = publicHttp;
     }
 
-    @Tool(description = "抓取网页正文，去掉脚本和样式后返回文本。")
+    @Tool(description = "抓取网页正文，去掉脚本和样式后返回文本。不能从懒加载页面得到图片文件地址。下载图片请用搜索结果里的图片直链。")
     public String scrape(@ToolParam(description = "以 http 或 https 开头的网页地址") String url) {
         try {
             publicHttp.checkPublicHttp(url);
