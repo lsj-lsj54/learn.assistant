@@ -22,6 +22,7 @@
         <spring-ai.version>2.0.1</spring-ai.version>
         <mybatis-plus.version>3.5.17</mybatis-plus.version>
         <knife4j.version>5.7.5</knife4j.version>
+        <jsoup.version>1.21.1</jsoup.version>
     </properties>
 
     <dependencyManagement>
@@ -84,6 +85,11 @@
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-rag</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>${jsoup.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.ai</groupId>

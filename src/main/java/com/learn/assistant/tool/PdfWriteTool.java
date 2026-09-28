@@ -1,0 +1,131 @@
+package com.learn.assistant.tool;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+public class PdfWriteTool {
+
+    private static final Path CHINESE_FONT = Path.of("C:/Windows/Fonts/simhei.ttf");
+
+    private static final float FONT_SIZE = 12;
+
+    private static final float MARGIN = 50;
+
+    private static final float LEADING = 18;
+
+    private final ProjectPaths projectPaths;
+
+    public PdfWriteTool(ProjectPaths projectPaths) {
+        this.projectPaths = projectPaths;
+    }
+
+    @Tool(description = "把文本写成 PDF，保存到项目的 src/main/resources/pdf 目录。适合保存大模型生成的文本或整理后的资料。")
+    public String writePdf(
+            @ToolParam(description = "文件名，例如 note.pdf") String fileName,
+            @ToolParam(description = "要写入 PDF 的正文") String content) {
+        try {
+            String safeName = sanitizeFileName(fileName);
+            if (!safeName.toLowerCase().endsWith(".pdf")) {
+                safeName = safeName + ".pdf";
+            }
+            Path directory = projectPaths.pdfDirectory();
+            Files.createDirectories(directory);
+            Path target = projectPaths.resolveWithin(directory, safeName);
+            write(target, content == null ? "" : content);
+            return "已写入 " + target;
+        }
+        catch (Exception exception) {
+            return "写入 PDF 失败: " + exception.getMessage();
+        }
+    }
+
+    private void write(Path target, String content) throws IOException {
+        try (PDDocument document = new PDDocument()) {
+            PDFont font = PDType0Font.load(document, CHINESE_FONT.toFile());
+            float width = PDRectangle.A4.getWidth() - MARGIN * 2;
+            List<String> lines = wrap(content, font, width);
+            PDPage page = newPage(document);
+            PDPageContentStream stream = start(document, page, font);
+            float y = page.getMediaBox().getHeight() - MARGIN;
+            for (String line : lines) {
+                if (y < MARGIN) {
+                    stream.endText();
+                    stream.close();
+                    page = newPage(document);
+                    stream = start(document, page, font);
+                    y = page.getMediaBox().getHeight() - MARGIN;
+                }
+                stream.showText(line);
+                stream.newLineAtOffset(0, -LEADING);
+                y -= LEADING;
+            }
+            stream.endText();
+            stream.close();
+            document.save(target.toFile());
+        }
+    }
+
+    private static PDPage newPage(PDDocument document) {
+        PDPage page = new PDPage(PDRectangle.A4);
+        document.addPage(page);
+        return page;
+    }
+
+    private static PDPageContentStream start(PDDocument document, PDPage page, PDFont font) throws IOException {
+        PDPageContentStream stream = new PDPageContentStream(document, page);
+        stream.beginText();
+        stream.setFont(font, FONT_SIZE);
+        stream.newLineAtOffset(MARGIN, page.getMediaBox().getHeight() - MARGIN);
+        return stream;
+    }
+
+    private static List<String> wrap(String content, PDFont font, float width) throws IOException {
+        List<String> lines = new ArrayList<>();
+        for (String paragraph : content.split("\\R", -1)) {
+            if (paragraph.isEmpty()) {
+                lines.add("");
+                continue;
+            }
+            StringBuilder current = new StringBuilder();
+            for (int i = 0; i < paragraph.length(); i++) {
+                char ch = paragraph.charAt(i);
+                String next = current.toString() + ch;
+                if (font.getStringWidth(next) / 1000 * FONT_SIZE > width && !current.isEmpty()) {
+                    lines.add(current.toString());
+                    current.setLength(0);
+                }
+                current.append(ch);
+            }
+            lines.add(current.toString());
+        }
+        if (lines.isEmpty()) {
+            lines.add("");
+        }
+        return lines;
+    }
+
+    private static String sanitizeFileName(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            throw new IllegalArgumentException("文件名不能为空");
+        }
+        String name = Path.of(fileName).getFileName().toString().trim();
+        if (name.isBlank() || ".".equals(name) || "..".equals(name)) {
+            throw new IllegalArgumentException("文件名不合法");
+        }
+        return name;
+    }
+}
