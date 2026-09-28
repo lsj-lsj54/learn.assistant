@@ -6,52 +6,57 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
-import org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer;
 import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
-import org.springframework.ai.rag.preretrieval.query.transformation.RewriteQueryTransformer;
-import org.springframework.ai.rag.preretrieval.query.transformation.TranslationQueryTransformer;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.AnnotationAwareOrderComparator;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Configuration
 public class RagAdvisorConfig {
 
-    private static final int REWRITE_MIN_LENGTH = 24;
+    @Bean
+    public QueryTransformerContributor compressionQueryTransformerContributor() {
+        return BuiltinQueryTransformers.compression();
+    }
 
     @Bean
-    public RetrievalAugmentationAdvisor retrievalAugmentationAdvisor(ChatModel chatModel, VectorStore vectorStore) {
+    public QueryTransformerContributor translationQueryTransformerContributor() {
+        return BuiltinQueryTransformers.translation();
+    }
+
+    @Bean
+    public QueryTransformerContributor rewriteQueryTransformerContributor() {
+        return BuiltinQueryTransformers.rewrite();
+    }
+
+    @Bean
+    public RetrievalAugmentationAdvisor retrievalAugmentationAdvisor(ChatModel chatModel, VectorStore vectorStore,
+            RagProperties properties, List<QueryTransformerContributor> contributors) {
+        RagProperties.Retrieval retrieval = properties.getRetrieval();
+        if (retrieval.getTopK() < 1) {
+            throw new IllegalArgumentException("learn.rag.retrieval.top-k 必须大于 0");
+        }
         ChatClient.Builder transformerBuilder = ChatClient.builder(chatModel)
                 .defaultOptions(ChatOptions.builder().temperature(0.0));
-
-        QueryTransformer compression = SelectiveQueryTransformer.when(
-                CompressionQueryTransformer.builder().chatClientBuilder(transformerBuilder).build(),
-                query -> !query.history().isEmpty());
-
-        QueryTransformer translation = SelectiveQueryTransformer.when(
-                TranslationQueryTransformer.builder()
-                        .chatClientBuilder(transformerBuilder)
-                        .targetLanguage("chinese")
-                        .build(),
-                query -> containsLatinLetter(query.text()));
-
-        QueryTransformer rewrite = SelectiveQueryTransformer.when(
-                RewriteQueryTransformer.builder()
-                        .chatClientBuilder(transformerBuilder)
-                        .targetSearchSystem("vector store")
-                        .build(),
-                query -> query.text().length() > REWRITE_MIN_LENGTH);
-
+        List<QueryTransformerContributor> ordered = new ArrayList<>(contributors);
+        AnnotationAwareOrderComparator.sort(ordered);
+        QueryTransformer[] transformers = ordered.stream()
+                .map(contributor -> contributor.contribute(transformerBuilder, properties))
+                .toArray(QueryTransformer[]::new);
         return RetrievalAugmentationAdvisor.builder()
-                .queryTransformers(compression, translation, rewrite)
+                .queryTransformers(transformers)
                 .documentRetriever(VectorStoreDocumentRetriever.builder()
                         .vectorStore(vectorStore)
-                        .similarityThreshold(0.5)
-                        .topK(4)
+                        .similarityThreshold(retrieval.getSimilarityThreshold())
+                        .topK(retrieval.getTopK())
                         .build())
                 .queryAugmenter(ContextualQueryAugmenter.builder()
-                        .allowEmptyContext(false)
+                        .allowEmptyContext(retrieval.isAllowEmptyContext())
                         .promptTemplate(new PromptTemplate("""
                                 上下文如下。
 
@@ -69,15 +74,5 @@ public class RagAdvisorConfig {
                         .emptyContextPromptTemplate(new PromptTemplate("请只回复：上下文为空"))
                         .build())
                 .build();
-    }
-
-    private static boolean containsLatinLetter(String text) {
-        for (int i = 0; i < text.length(); i++) {
-            char ch = text.charAt(i);
-            if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) {
-                return true;
-            }
-        }
-        return false;
     }
 }

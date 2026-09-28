@@ -2,6 +2,7 @@ package com.learn.assistant.tool;
 
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -11,6 +12,8 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 @Component
+@AssistantTool
+@Order(1)
 public class FileOperationTool {
 
     private static final int MAX_TEXT_LENGTH = 100_000;

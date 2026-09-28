@@ -1,18 +1,17 @@
 package com.learn.assistant.service;
 
-import com.learn.assistant.ai.LearningChatClient;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ChatService {
 
-    private final LearningChatClient learningChatClient;
+    private final ConversationClient conversationClient;
 
-    public ChatService(LearningChatClient learningChatClient) {
-        this.learningChatClient = learningChatClient;
+    public ChatService(ConversationClient conversationClient) {
+        this.conversationClient = conversationClient;
     }
 
     public String reply(String message, String conversationId) {
-        return learningChatClient.chat(message, conversationId);
+        return conversationClient.chat(message, conversationId);
     }
 }

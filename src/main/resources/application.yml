@@ -40,7 +40,21 @@ spring:
             initialize-schema: always
 
 learn:
+  chat:
+    system-prompt: "你是学习助手，用简洁的中文回答。"
+    max-memory-messages: 20
+  paths:
+    pdf-dir: src/main/resources/pdf
+    download-dir: res
+  tools:
+    pdf-font: C:/Windows/Fonts/simhei.ttf
   rag:
+    retrieval:
+      similarity-threshold: 0.5
+      top-k: 4
+      rewrite-min-length: 24
+      target-language: chinese
+      allow-empty-context: false
     chunk:
       chunk-size: 500
       min-chunk-size-chars: 100

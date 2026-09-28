@@ -1,10 +1,8 @@
 package com.learn.assistant.ai;
 
-import com.learn.assistant.tool.FileOperationTool;
-import com.learn.assistant.tool.PdfWriteTool;
-import com.learn.assistant.tool.ResourceDownloadTool;
-import com.learn.assistant.tool.WebScrapeTool;
-import com.learn.assistant.tool.WebSearchTool;
+import com.learn.assistant.service.ConversationClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -12,21 +10,26 @@ import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.stereotype.Component;
 
 @Component
-public class LearningChatClient {
+public class LearningChatClient implements ConversationClient {
+
+    private static final Logger log = LoggerFactory.getLogger(LearningChatClient.class);
 
     private final ChatClient chatClient;
 
     public LearningChatClient(ChatClient.Builder builder, MessageChatMemoryAdvisor messageChatMemoryAdvisor,
-            RetrievalAugmentationAdvisor retrievalAugmentationAdvisor, PdfWriteTool pdfWriteTool,
-            FileOperationTool fileOperationTool, WebSearchTool webSearchTool,
-            ResourceDownloadTool resourceDownloadTool, WebScrapeTool webScrapeTool) {
+            RetrievalAugmentationAdvisor retrievalAugmentationAdvisor, AssistantToolCatalog assistantToolCatalog,
+            ChatProperties chatProperties) {
+        chatProperties.validate();
+        Object[] tools = assistantToolCatalog.toArray();
+        log.info("已注册 {} 个工具", tools.length);
         this.chatClient = builder
-                .defaultSystem("你是学习助手，用简洁的中文回答。")
+                .defaultSystem(chatProperties.systemPromptOrDefault())
                 .defaultAdvisors(messageChatMemoryAdvisor, retrievalAugmentationAdvisor)
-                .defaultTools(pdfWriteTool, fileOperationTool, webSearchTool, resourceDownloadTool, webScrapeTool)
+                .defaultTools(tools)
                 .build();
     }
 
+    @Override
     public String chat(String message, String conversationId) {
         return chatClient.prompt()
                 .user(message)

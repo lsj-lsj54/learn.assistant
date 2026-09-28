@@ -20,7 +20,7 @@ class DocumentIngestServiceTest {
         PdfDocumentSource source = mock(PdfDocumentSource.class);
         VectorStore vectorStore = mock(VectorStore.class);
         when(source.read()).thenReturn(List.of());
-        DocumentIngestService service = new DocumentIngestService(source, splitter(), vectorStore);
+        DocumentIngestService service = new DocumentIngestService(List.of(source), splitter(), vectorStore);
 
         assertEquals(0, service.ingest());
         verify(vectorStore, never()).add(org.mockito.ArgumentMatchers.anyList());
@@ -32,11 +32,30 @@ class DocumentIngestServiceTest {
         VectorStore vectorStore = mock(VectorStore.class);
         when(source.read()).thenReturn(List.of(new Document("第一句。第二句。第三句。第四句。第五句。")));
         TokenTextSplitter splitter = splitter();
-        DocumentIngestService service = new DocumentIngestService(source, splitter, vectorStore);
+        DocumentIngestService service = new DocumentIngestService(List.of(source), splitter, vectorStore);
 
         int count = service.ingest();
 
         assertEquals(splitter.apply(List.of(new Document("第一句。第二句。第三句。第四句。第五句。"))).size(), count);
+        verify(vectorStore).add(org.mockito.ArgumentMatchers.argThat(chunks -> chunks.size() == count));
+    }
+
+    @Test
+    void mergesEveryDocumentSource() {
+        DocumentSource first = mock(DocumentSource.class);
+        DocumentSource second = mock(DocumentSource.class);
+        VectorStore vectorStore = mock(VectorStore.class);
+        when(first.read()).thenReturn(List.of(new Document("第一句。第二句。")));
+        when(second.read()).thenReturn(List.of(new Document("第三句。第四句。第五句。")));
+        TokenTextSplitter splitter = splitter();
+        DocumentIngestService service = new DocumentIngestService(List.of(first, second), splitter, vectorStore);
+
+        int count = service.ingest();
+
+        List<Document> expected = splitter.apply(List.of(
+                new Document("第一句。第二句。"),
+                new Document("第三句。第四句。第五句。")));
+        assertEquals(expected.size(), count);
         verify(vectorStore).add(org.mockito.ArgumentMatchers.argThat(chunks -> chunks.size() == count));
     }
 

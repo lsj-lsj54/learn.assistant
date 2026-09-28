@@ -3,9 +3,12 @@ package com.learn.assistant.tool;
 import org.jsoup.Jsoup;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
+@AssistantTool
+@Order(4)
 public class WebScrapeTool {
 
     private static final int MAX_TEXT_LENGTH = 8_000;

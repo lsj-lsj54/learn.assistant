@@ -1,7 +1,7 @@
 package com.learn.assistant.controller;
 
 import com.learn.assistant.domain.vo.DocumentIngestResponse;
-import com.learn.assistant.rag.DocumentIngestService;
+import com.learn.assistant.service.DocumentIngestor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -10,14 +10,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/documents")
 public class DocumentController {
 
-    private final DocumentIngestService documentIngestService;
+    private final DocumentIngestor documentIngestor;
 
-    public DocumentController(DocumentIngestService documentIngestService) {
-        this.documentIngestService = documentIngestService;
+    public DocumentController(DocumentIngestor documentIngestor) {
+        this.documentIngestor = documentIngestor;
     }
 
     @PostMapping
     public DocumentIngestResponse ingest() {
-        return new DocumentIngestResponse(documentIngestService.ingest());
+        return new DocumentIngestResponse(documentIngestor.ingest());
     }
 }

@@ -5,9 +5,12 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
+@AssistantTool
+@Order(2)
 public class WebSearchTool {
 
     @Tool(description = "联网搜索，返回若干条标题和链接。")

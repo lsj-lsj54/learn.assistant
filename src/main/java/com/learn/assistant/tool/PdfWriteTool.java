@@ -8,6 +8,9 @@ import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -17,9 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@AssistantTool
+@Order(0)
 public class PdfWriteTool {
 
-    private static final Path CHINESE_FONT = Path.of("C:/Windows/Fonts/simhei.ttf");
+    private static final Path DEFAULT_CHINESE_FONT = Path.of("C:/Windows/Fonts/simhei.ttf");
 
     private static final float FONT_SIZE = 12;
 
@@ -29,8 +34,21 @@ public class PdfWriteTool {
 
     private final ProjectPaths projectPaths;
 
+    private final Path chineseFont;
+
     public PdfWriteTool(ProjectPaths projectPaths) {
+        this(projectPaths, DEFAULT_CHINESE_FONT);
+    }
+
+    @Autowired
+    public PdfWriteTool(ProjectPaths projectPaths,
+            @Value("${learn.tools.pdf-font:C:/Windows/Fonts/simhei.ttf}") String fontPath) {
+        this(projectPaths, Path.of(fontPath));
+    }
+
+    private PdfWriteTool(ProjectPaths projectPaths, Path chineseFont) {
         this.projectPaths = projectPaths;
+        this.chineseFont = chineseFont;
     }
 
     @Tool(description = "把文本写成 PDF，保存到项目的 src/main/resources/pdf 目录。适合保存大模型生成的文本或整理后的资料。")
@@ -55,26 +73,40 @@ public class PdfWriteTool {
 
     private void write(Path target, String content) throws IOException {
         try (PDDocument document = new PDDocument()) {
-            PDFont font = PDType0Font.load(document, CHINESE_FONT.toFile());
+            PDFont font = PDType0Font.load(document, chineseFont.toFile());
             float width = PDRectangle.A4.getWidth() - MARGIN * 2;
             List<String> lines = wrap(content, font, width);
             PDPage page = newPage(document);
             PDPageContentStream stream = start(document, page, font);
-            float y = page.getMediaBox().getHeight() - MARGIN;
-            for (String line : lines) {
-                if (y < MARGIN) {
-                    stream.endText();
-                    stream.close();
-                    page = newPage(document);
-                    stream = start(document, page, font);
-                    y = page.getMediaBox().getHeight() - MARGIN;
+            try {
+                float y = page.getMediaBox().getHeight() - MARGIN;
+                for (String line : lines) {
+                    if (y < MARGIN) {
+                        stream.endText();
+                        stream.close();
+                        stream = null;
+                        page = newPage(document);
+                        stream = start(document, page, font);
+                        y = page.getMediaBox().getHeight() - MARGIN;
+                    }
+                    stream.showText(line);
+                    stream.newLineAtOffset(0, -LEADING);
+                    y -= LEADING;
                 }
-                stream.showText(line);
-                stream.newLineAtOffset(0, -LEADING);
-                y -= LEADING;
+                stream.endText();
+                stream.close();
+                stream = null;
             }
-            stream.endText();
-            stream.close();
+            finally {
+                if (stream != null) {
+                    try {
+                        stream.close();
+                    }
+                    catch (IOException ignored) {
+                        // 保留触发失败的原始异常
+                    }
+                }
+            }
             document.save(target.toFile());
         }
     }

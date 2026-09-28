@@ -9,12 +9,18 @@ public class RagProperties {
 
     private final Batch batch = new Batch();
 
+    private final Retrieval retrieval = new Retrieval();
+
     public Chunk getChunk() {
         return chunk;
     }
 
     public Batch getBatch() {
         return batch;
+    }
+
+    public Retrieval getRetrieval() {
+        return retrieval;
     }
 
     public static class Chunk {
@@ -110,6 +116,59 @@ public class RagProperties {
 
         public void setEncoding(String encoding) {
             this.encoding = encoding;
+        }
+    }
+
+    public static class Retrieval {
+
+        private double similarityThreshold = 0.5;
+
+        private int topK = 4;
+
+        private int rewriteMinLength = 24;
+
+        private String targetLanguage = "chinese";
+
+        private boolean allowEmptyContext = false;
+
+        public double getSimilarityThreshold() {
+            return similarityThreshold;
+        }
+
+        public void setSimilarityThreshold(double similarityThreshold) {
+            this.similarityThreshold = similarityThreshold;
+        }
+
+        public int getTopK() {
+            return topK;
+        }
+
+        public void setTopK(int topK) {
+            this.topK = topK;
+        }
+
+        public int getRewriteMinLength() {
+            return rewriteMinLength;
+        }
+
+        public void setRewriteMinLength(int rewriteMinLength) {
+            this.rewriteMinLength = rewriteMinLength;
+        }
+
+        public String getTargetLanguage() {
+            return targetLanguage;
+        }
+
+        public void setTargetLanguage(String targetLanguage) {
+            this.targetLanguage = targetLanguage;
+        }
+
+        public boolean isAllowEmptyContext() {
+            return allowEmptyContext;
+        }
+
+        public void setAllowEmptyContext(boolean allowEmptyContext) {
+            this.allowEmptyContext = allowEmptyContext;
         }
     }
 }
