@@ -35,7 +35,7 @@ public class ResourceDownloadTool {
         this.publicHttp = publicHttp;
     }
 
-    @Tool(description = "下载网络图片到项目的 res 目录。")
+    @Tool(description = "把图片直链下载到项目的 res 目录。地址必须是 http 或 https 的图片文件，优先使用搜索结果中的图片直链，不要使用普通网页地址。")
     public String downloadImage(
             @ToolParam(description = "以 http 或 https 开头的图片地址") String url,
             @ToolParam(description = "保存的文件名，例如 photo.png；留空则从地址中取文件名", required = false) String fileName) {

@@ -15,7 +15,7 @@ class AssistantToolCatalogTest {
     @Test
     void sortsToolsByOrder() {
         PdfWriteTool pdf = new PdfWriteTool(new ProjectPaths("src/main/resources/pdf", "res"), new ToolProperties());
-        WebSearchTool search = new WebSearchTool();
+        WebSearchTool search = new WebSearchTool(new ToolProperties());
         ApplicationContext context = mock(ApplicationContext.class);
         when(context.getBeansWithAnnotation(AssistantTool.class)).thenReturn(Map.of(
                 "search", search,
