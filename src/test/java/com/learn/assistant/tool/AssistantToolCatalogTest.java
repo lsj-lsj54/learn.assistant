@@ -1,9 +1,6 @@
-package com.learn.assistant.ai;
+package com.learn.assistant.tool;
 
-import com.learn.assistant.tool.AssistantTool;
-import com.learn.assistant.tool.PdfWriteTool;
-import com.learn.assistant.tool.ProjectPaths;
-import com.learn.assistant.tool.WebSearchTool;
+import com.learn.assistant.properties.ToolProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 
@@ -17,7 +14,7 @@ class AssistantToolCatalogTest {
 
     @Test
     void sortsToolsByOrder() {
-        PdfWriteTool pdf = new PdfWriteTool(new ProjectPaths());
+        PdfWriteTool pdf = new PdfWriteTool(new ProjectPaths("src/main/resources/pdf", "res"), new ToolProperties());
         WebSearchTool search = new WebSearchTool();
         ApplicationContext context = mock(ApplicationContext.class);
         when(context.getBeansWithAnnotation(AssistantTool.class)).thenReturn(Map.of(

@@ -1,5 +1,7 @@
 package com.learn.assistant.rag;
 
+import com.learn.assistant.config.RagConfig;
+import com.learn.assistant.properties.RagProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;

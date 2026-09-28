@@ -101,6 +101,7 @@ class FileOperationToolTest {
         private final Path root;
 
         private TempProjectPaths(Path root) {
+            super("src/main/resources/pdf", "res");
             this.root = root;
         }
 

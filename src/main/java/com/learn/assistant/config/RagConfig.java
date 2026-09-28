@@ -1,14 +1,22 @@
-package com.learn.assistant.rag;
+package com.learn.assistant.config;
 
+import com.knuddels.jtokkit.api.EncodingType;
+import com.learn.assistant.properties.RagProperties;
+import com.learn.assistant.rag.BuiltinQueryTransformers;
+import com.learn.assistant.rag.QueryTransformerContributor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.embedding.BatchingStrategy;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
 import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
@@ -17,7 +25,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
-public class RagAdvisorConfig {
+@EnableConfigurationProperties(RagProperties.class)
+public class RagConfig {
+
+    @Bean
+    public TokenTextSplitter tokenTextSplitter(RagProperties properties) {
+        RagProperties.Chunk chunk = properties.getChunk();
+        return TokenTextSplitter.builder()
+                .withChunkSize(chunk.getChunkSize())
+                .withMinChunkSizeChars(chunk.getMinChunkSizeChars())
+                .withMinChunkLengthToEmbed(chunk.getMinChunkLengthToEmbed())
+                .withMaxNumChunks(chunk.getMaxNumChunks())
+                .withKeepSeparator(chunk.isKeepSeparator())
+                .withPunctuationMarks(punctuationMarks(chunk.getPunctuation()))
+                .build();
+    }
+
+    @Bean
+    public BatchingStrategy batchingStrategy(RagProperties properties) {
+        RagProperties.Batch batch = properties.getBatch();
+        return new TokenCountBatchingStrategy(
+                EncodingType.valueOf(batch.getEncoding()),
+                batch.getMaxTokenCount(),
+                batch.getReservePercentage());
+    }
 
     @Bean
     public QueryTransformerContributor compressionQueryTransformerContributor() {
@@ -57,22 +88,15 @@ public class RagAdvisorConfig {
                         .build())
                 .queryAugmenter(ContextualQueryAugmenter.builder()
                         .allowEmptyContext(retrieval.isAllowEmptyContext())
-                        .promptTemplate(new PromptTemplate("""
-                                上下文如下。
-
-                                ---------------------
-                                {context}
-                                ---------------------
-
-                                只根据上下文回答，不要使用上下文以外的知识。
-                                如果上下文里没有答案，就说不知道。
-
-                                问题：{query}
-
-                                回答：
-                                """))
-                        .emptyContextPromptTemplate(new PromptTemplate("请只回复：上下文为空"))
+                        .promptTemplate(new PromptTemplate(RagPrompts.CONTEXT))
+                        .emptyContextPromptTemplate(new PromptTemplate(RagPrompts.EMPTY_CONTEXT))
                         .build())
                 .build();
+    }
+
+    private static List<Character> punctuationMarks(String punctuation) {
+        List<Character> marks = new ArrayList<>();
+        punctuation.codePoints().forEach(codePoint -> marks.add((char) codePoint));
+        return marks;
     }
 }

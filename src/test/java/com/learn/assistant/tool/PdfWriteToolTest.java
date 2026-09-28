@@ -1,5 +1,6 @@
 package com.learn.assistant.tool;
 
+import com.learn.assistant.properties.ToolProperties;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -17,7 +18,7 @@ class PdfWriteToolTest {
 
     @Test
     void writePdfSavesChineseText() throws Exception {
-        PdfWriteTool tool = new PdfWriteTool(new TempProjectPaths(tempDir));
+        PdfWriteTool tool = new PdfWriteTool(new TempProjectPaths(tempDir), new ToolProperties());
 
         String result = tool.writePdf("note", "我的名字是小明。");
 
@@ -31,7 +32,7 @@ class PdfWriteToolTest {
 
     @Test
     void writePdfRejectsBlankName() {
-        PdfWriteTool tool = new PdfWriteTool(new TempProjectPaths(tempDir));
+        PdfWriteTool tool = new PdfWriteTool(new TempProjectPaths(tempDir), new ToolProperties());
 
         assertTrue(tool.writePdf("  ", "正文").startsWith("写入 PDF 失败"));
     }
@@ -41,6 +42,7 @@ class PdfWriteToolTest {
         private final Path root;
 
         private TempProjectPaths(Path root) {
+            super("src/main/resources/pdf", "res");
             this.root = root;
         }
 

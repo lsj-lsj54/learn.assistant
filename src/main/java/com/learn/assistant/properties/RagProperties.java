@@ -1,4 +1,4 @@
-package com.learn.assistant.rag;
+package com.learn.assistant.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

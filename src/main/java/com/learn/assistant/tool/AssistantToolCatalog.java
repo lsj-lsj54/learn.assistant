@@ -1,6 +1,5 @@
-package com.learn.assistant.ai;
+package com.learn.assistant.tool;
 
-import com.learn.assistant.tool.AssistantTool;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.stereotype.Component;

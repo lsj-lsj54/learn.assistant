@@ -1,4 +1,4 @@
-package com.learn.assistant.ai;
+package com.learn.assistant.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

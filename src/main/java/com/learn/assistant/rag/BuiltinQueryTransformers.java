@@ -1,5 +1,6 @@
 package com.learn.assistant.rag;
 
+import com.learn.assistant.properties.RagProperties;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer;
 import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
@@ -8,18 +9,18 @@ import org.springframework.ai.rag.preretrieval.query.transformation.TranslationQ
 
 import java.util.function.BiFunction;
 
-final class BuiltinQueryTransformers {
+public final class BuiltinQueryTransformers {
 
     private BuiltinQueryTransformers() {
     }
 
-    static QueryTransformerContributor compression() {
+    public static QueryTransformerContributor compression() {
         return contributor("compression", 0, (builder, properties) -> SelectiveQueryTransformer.when(
                 CompressionQueryTransformer.builder().chatClientBuilder(builder).build(),
                 query -> !query.history().isEmpty()));
     }
 
-    static QueryTransformerContributor translation() {
+    public static QueryTransformerContributor translation() {
         return contributor("translation", 1, (builder, properties) -> SelectiveQueryTransformer.when(
                 TranslationQueryTransformer.builder()
                         .chatClientBuilder(builder)
@@ -28,7 +29,7 @@ final class BuiltinQueryTransformers {
                 query -> containsLatinLetter(query.text())));
     }
 
-    static QueryTransformerContributor rewrite() {
+    public static QueryTransformerContributor rewrite() {
         return contributor("rewrite", 2, (builder, properties) -> SelectiveQueryTransformer.when(
                 RewriteQueryTransformer.builder()
                         .chatClientBuilder(builder)

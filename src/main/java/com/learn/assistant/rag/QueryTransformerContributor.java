@@ -1,5 +1,6 @@
 package com.learn.assistant.rag;
 
+import com.learn.assistant.properties.RagProperties;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
 import org.springframework.core.Ordered;

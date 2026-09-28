@@ -1,5 +1,6 @@
 package com.learn.assistant.tool;
 
+import com.learn.assistant.properties.ToolProperties;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -8,8 +9,6 @@ import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -24,8 +23,6 @@ import java.util.List;
 @Order(0)
 public class PdfWriteTool {
 
-    private static final Path DEFAULT_CHINESE_FONT = Path.of("C:/Windows/Fonts/simhei.ttf");
-
     private static final float FONT_SIZE = 12;
 
     private static final float MARGIN = 50;
@@ -36,19 +33,9 @@ public class PdfWriteTool {
 
     private final Path chineseFont;
 
-    public PdfWriteTool(ProjectPaths projectPaths) {
-        this(projectPaths, DEFAULT_CHINESE_FONT);
-    }
-
-    @Autowired
-    public PdfWriteTool(ProjectPaths projectPaths,
-            @Value("${learn.tools.pdf-font:C:/Windows/Fonts/simhei.ttf}") String fontPath) {
-        this(projectPaths, Path.of(fontPath));
-    }
-
-    private PdfWriteTool(ProjectPaths projectPaths, Path chineseFont) {
+    public PdfWriteTool(ProjectPaths projectPaths, ToolProperties toolProperties) {
         this.projectPaths = projectPaths;
-        this.chineseFont = chineseFont;
+        this.chineseFont = Path.of(toolProperties.getPdfFont());
     }
 
     @Tool(description = "把文本写成 PDF，保存到项目的 src/main/resources/pdf 目录。适合保存大模型生成的文本或整理后的资料。")

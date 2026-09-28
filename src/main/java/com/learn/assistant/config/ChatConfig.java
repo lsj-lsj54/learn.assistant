@@ -1,9 +1,15 @@
-package com.learn.assistant.ai;
+package com.learn.assistant.config;
 
+import com.learn.assistant.properties.ChatProperties;
+import com.learn.assistant.tool.AssistantToolCatalog;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -11,7 +17,9 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @EnableConfigurationProperties(ChatProperties.class)
-public class ChatMemoryConfig {
+public class ChatConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(ChatConfig.class);
 
     @Bean
     @ConditionalOnMissingBean
@@ -26,5 +34,19 @@ public class ChatMemoryConfig {
     @Bean
     public MessageChatMemoryAdvisor messageChatMemoryAdvisor(ChatMemory chatMemory) {
         return MessageChatMemoryAdvisor.builder(chatMemory).build();
+    }
+
+    @Bean
+    public ChatClient chatClient(ChatClient.Builder builder, MessageChatMemoryAdvisor messageChatMemoryAdvisor,
+            RetrievalAugmentationAdvisor retrievalAugmentationAdvisor, AssistantToolCatalog assistantToolCatalog,
+            ChatProperties chatProperties) {
+        chatProperties.validate();
+        Object[] tools = assistantToolCatalog.toArray();
+        log.info("已注册 {} 个工具", tools.length);
+        return builder
+                .defaultSystem(chatProperties.systemPromptOrDefault())
+                .defaultAdvisors(messageChatMemoryAdvisor, retrievalAugmentationAdvisor)
+                .defaultTools(tools)
+                .build();
     }
 }
