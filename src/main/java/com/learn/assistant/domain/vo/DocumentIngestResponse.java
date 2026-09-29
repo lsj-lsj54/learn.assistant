@@ -1,4 +1,7 @@
 package com.learn.assistant.domain.vo;
 
-public record DocumentIngestResponse(int addedCount, int skippedCount) {
+import java.util.List;
+
+public record DocumentIngestResponse(int addedCount, int skippedCount, List<FileIngestResponse> files) {
 }
+

@@ -39,7 +39,7 @@ body {
     border-right: 1px solid var(--line);
 }
 
-.new-chat, .import-pdf, .clear-vectors, .send, .menu {
+.new-chat, .import-pdf, .clear-vectors, .send, .menu, .library-upload, .library-action, .library-toggle {
     border: 0;
     cursor: pointer;
     font: inherit;
@@ -114,6 +114,132 @@ body {
 .chat-delete:hover {
     color: var(--danger);
     background: #161616;
+}
+
+.library {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+}
+
+.library-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.library-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    background: transparent;
+    color: var(--muted);
+}
+
+.library-toggle::before {
+    content: "";
+    width: 0;
+    height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 5px solid currentColor;
+}
+
+.library:not(.collapsed) .library-toggle::before {
+    border-top: 5px solid currentColor;
+    border-right: 4px solid transparent;
+    border-bottom: 0;
+    border-left: 4px solid transparent;
+}
+
+.library-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.library.collapsed .library-body {
+    display: none;
+}
+
+.library-upload {
+    background: transparent;
+    color: var(--accent);
+    padding: 0;
+}
+
+.library-list {
+    max-height: 220px;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 12px;
+}
+
+.library-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.library-file {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.library-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+}
+
+.library-meta,
+.library-empty,
+.library-result {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.library-empty,
+.library-result {
+    margin: 0;
+}
+
+.library-result {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.library-result:empty {
+    display: none;
+}
+
+.library-result.error {
+    color: var(--danger);
+}
+
+.library-action {
+    flex: none;
+    background: transparent;
+    color: var(--accent);
+    padding: 0;
+    font-size: 12px;
+}
+
+.library-action.danger {
+    color: var(--danger);
 }
 
 .settings {
@@ -280,6 +406,21 @@ body {
     color: var(--muted);
     font-size: 12px;
     line-height: 1.5;
+}
+
+.tools {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tool-step {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .message.pending {

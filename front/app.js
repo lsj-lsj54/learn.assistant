@@ -1,5 +1,6 @@
 const apiBase = location.port === "8080" ? "" : "http://localhost:8080";
 const storageKey = "learn-assistant-chats";
+const libraryOpenKey = "learn-assistant-library-open";
 
 const chatList = document.querySelector("#chatList");
 const messagesEl = document.querySelector("#messages");
@@ -10,11 +11,17 @@ const send = document.querySelector("#send");
 const hint = document.querySelector("#hint");
 const sidebar = document.querySelector(".sidebar");
 const stage = document.querySelector("#stage");
+const library = document.querySelector("#library");
+const libraryToggle = document.querySelector("#libraryToggle");
+const libraryList = document.querySelector("#libraryList");
+const libraryResult = document.querySelector("#libraryResult");
+const pdfFile = document.querySelector("#pdfFile");
 
 let chats = loadChats();
 let currentId = chats[0]?.id ?? null;
 let sending = false;
 let mode = "study";
+let replacePath = "";
 
 document.querySelector("#newChat").addEventListener("click", () => {
     currentId = null;
@@ -27,6 +34,24 @@ document.querySelector("#menu").addEventListener("click", () => {
     sidebar.classList.toggle("open");
 });
 
+libraryToggle.addEventListener("click", () => {
+    setLibraryOpen(library.classList.contains("collapsed"));
+});
+setLibraryOpen(localStorage.getItem(libraryOpenKey) !== "0");
+
+document.querySelector("#uploadPdf").addEventListener("click", () => {
+    replacePath = "";
+    pdfFile.click();
+});
+pdfFile.addEventListener("change", () => {
+    const chosen = pdfFile.files[0];
+    const path = replacePath;
+    pdfFile.value = "";
+    replacePath = "";
+    if (chosen) {
+        uploadPdf(chosen, path);
+    }
+});
 document.querySelector("#importPdf").addEventListener("click", importPdf);
 document.querySelector("#clearVectors").addEventListener("click", clearVectors);
 document.querySelector("#modeStudy").addEventListener("click", () => setMode("study"));
@@ -52,6 +77,7 @@ input.addEventListener("input", () => {
 
 render();
 loadSettings();
+loadLibrary();
 
 function loadChats() {
     try {
@@ -82,6 +108,7 @@ function render() {
             fillMessageText(text, message);
             item.append(text);
             appendSources(item, message.sources);
+            appendTools(item, message.tools);
             messagesEl.appendChild(item);
         }
         scrollToLatest();
@@ -248,6 +275,10 @@ function applyStreamEvents(chat, accumulated, events) {
             addSource(chat, event.data);
             continue;
         }
+        if (event.name === "tool") {
+            addTool(chat, event.data);
+            continue;
+        }
         accumulated += event.data;
         showAssistant(chat, accumulated);
     }
@@ -286,6 +317,17 @@ function addSource(chat, data) {
     paintAssistant(chat, message);
 }
 
+function addTool(chat, data) {
+    const step = readTool(data);
+    if (!step) {
+        return;
+    }
+    const message = chat.messages[chat.messages.length - 1];
+    message.tools = message.tools || [];
+    message.tools.push(step);
+    paintAssistant(chat, message);
+}
+
 function paintAssistant(chat, message) {
     if (currentId !== chat.id) {
         return;
@@ -309,6 +351,7 @@ function paintAssistant(chat, message) {
     fillMessageText(text, message);
     node.classList.toggle("pending", Boolean(message.pending));
     appendSources(node, message.sources);
+    appendTools(node, message.tools);
     scrollToLatest();
 }
 
@@ -408,6 +451,47 @@ function formatSource(source) {
     return source.file + " · 第" + source.page + "页";
 }
 
+function appendTools(node, tools) {
+    let list = node.querySelector(".tools");
+    if (!tools || tools.length === 0) {
+        if (list) {
+            list.remove();
+        }
+        return;
+    }
+    if (!list) {
+        list = document.createElement("div");
+        list.className = "tools";
+        node.append(list);
+    }
+    list.textContent = "";
+    for (const step of tools) {
+        const item = document.createElement("div");
+        item.className = "tool-step";
+        const lines = [step.name];
+        if (step.arguments) {
+            lines.push("参数：" + step.arguments);
+        }
+        if (step.result) {
+            lines.push("结果：" + step.result);
+        }
+        item.textContent = lines.join("\n");
+        list.append(item);
+    }
+}
+
+function readTool(data) {
+    try {
+        const parsed = JSON.parse(data);
+        if (parsed && parsed.name) {
+            return parsed;
+        }
+    } catch {
+        return null;
+    }
+    return null;
+}
+
 function readSource(data) {
     try {
         const parsed = JSON.parse(data);
@@ -452,43 +536,187 @@ function consumeSse(buffer) {
 }
 
 async function importPdf() {
-    setHint("正在导入 PDF");
+    setLibraryResult("正在导入 PDF");
     try {
         const response = await fetch(apiBase + "/api/documents", { method: "POST" });
         const body = await response.json().catch(() => ({}));
         if (!response.ok) {
-            throw new Error(body.message || body.error || "导入失败");
+            throw new Error(errorText(body, "导入失败"));
         }
-        const added = body.addedCount ?? 0;
-        const skipped = body.skippedCount ?? 0;
-        if (added === 0 && skipped === 0) {
-            setHint("没有可导入的文档");
-        } else if (added === 0) {
-            setHint("没有新片段，跳过 " + skipped + " 段重复");
-        } else if (skipped === 0) {
-            setHint("已导入 " + added + " 段");
-        } else {
-            setHint("已导入 " + added + " 段，跳过 " + skipped + " 段重复");
-        }
+        showIngest(body);
+        await loadLibrary();
     } catch (error) {
-        setHint(error.message || "无法连接后端", true);
+        setLibraryResult(error.message || "无法连接后端", true);
     }
+}
+
+async function uploadPdf(file, path) {
+    setLibraryResult(path ? "正在替换" : "正在上传");
+    const body = new FormData();
+    body.append("file", file);
+    if (path) {
+        body.append("path", path);
+    }
+    try {
+        const response = await fetch(apiBase + "/api/documents/files", { method: "POST", body });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(errorText(payload, "上传失败"));
+        }
+        showIngest(payload);
+        await loadLibrary();
+    } catch (error) {
+        setLibraryResult(error.message || "无法连接后端", true);
+    }
+}
+
+async function deleteDocument(file) {
+    if (!window.confirm("删除「" + file + "」？资料库里的切片和 PDF 文件都会去掉。")) {
+        return;
+    }
+    setLibraryResult("正在删除");
+    try {
+        const response = await fetch(apiBase + "/api/documents/files?file=" + encodeURIComponent(file), {
+            method: "DELETE"
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(errorText(body, "删除失败"));
+        }
+        if ((body.deletedCount ?? 0) === 0 && !body.fileRemoved) {
+            setLibraryResult("没有找到 " + (body.file || file));
+        } else if (body.fileRemoved) {
+            setLibraryResult("已删除 " + (body.file || file));
+        } else {
+            setLibraryResult("已从资料库去掉 " + (body.file || file) + "。原文件还在，重新导入会再次出现");
+        }
+        await loadLibrary();
+    } catch (error) {
+        setLibraryResult(error.message || "无法连接后端", true);
+    }
+}
+
+async function loadLibrary() {
+    try {
+        const response = await fetch(apiBase + "/api/documents");
+        const body = await response.json().catch(() => null);
+        if (!response.ok || !Array.isArray(body)) {
+            throw new Error();
+        }
+        renderLibrary(body);
+    } catch {
+        renderLibrary(null);
+    }
+}
+
+function renderLibrary(files) {
+    libraryList.textContent = "";
+    if (files == null) {
+        const empty = document.createElement("p");
+        empty.className = "library-empty";
+        empty.textContent = "未连接";
+        libraryList.append(empty);
+        return;
+    }
+    if (files.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "library-empty";
+        empty.textContent = "还没有导入的资料";
+        libraryList.append(empty);
+        return;
+    }
+    for (const file of files) {
+        const row = document.createElement("div");
+        row.className = "library-row";
+        const text = document.createElement("div");
+        text.className = "library-file";
+        const name = document.createElement("span");
+        name.className = "library-name";
+        name.textContent = file.file;
+        name.title = file.file;
+        const meta = document.createElement("span");
+        meta.className = "library-meta";
+        meta.textContent = file.pageCount + " 页 · " + file.chunkCount + " 段";
+        text.append(name, meta);
+        const replace = document.createElement("button");
+        replace.type = "button";
+        replace.className = "library-action";
+        replace.textContent = "替换";
+        replace.addEventListener("click", () => {
+            replacePath = file.file;
+            pdfFile.click();
+        });
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "library-action danger";
+        remove.textContent = "删除";
+        remove.addEventListener("click", () => deleteDocument(file.file));
+        row.append(text, replace, remove);
+        libraryList.append(row);
+    }
+}
+
+function showIngest(body) {
+    const files = Array.isArray(body.files) ? body.files : [];
+    const failed = files.some((file) => file.status === "failed");
+    setLibraryResult(describeIngest(body), failed);
+}
+
+function describeIngest(body) {
+    const files = Array.isArray(body.files) ? body.files : [];
+    const added = files.filter((file) => file.status === "added").map((file) => file.file);
+    const skipped = files.filter((file) => file.status === "skipped").map((file) => file.file);
+    const failed = files.filter((file) => file.status === "failed").map((file) => {
+        return file.message ? file.file + "（" + file.message + "）" : file.file;
+    });
+    if (added.length + skipped.length + failed.length === 0) {
+        return "没有可导入的文档";
+    }
+    const parts = [];
+    if (added.length) {
+        parts.push("已导入 " + added.join("、"));
+    }
+    if (skipped.length) {
+        parts.push("跳过 " + skipped.join("、"));
+    }
+    if (failed.length) {
+        parts.push("失败 " + failed.join("、"));
+    }
+    return parts.join("。");
+}
+
+function errorText(body, fallback) {
+    return body.message || body.detail || body.error || fallback;
+}
+
+function setLibraryOpen(open) {
+    library.classList.toggle("collapsed", !open);
+    libraryToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    libraryToggle.setAttribute("aria-label", open ? "收起资料库" : "展开资料库");
+    localStorage.setItem(libraryOpenKey, open ? "1" : "0");
+}
+
+function setLibraryResult(text, isError) {
+    libraryResult.textContent = text || "";
+    libraryResult.classList.toggle("error", Boolean(isError));
+    setHint(text || "", isError);
 }
 
 async function clearVectors() {
     if (!window.confirm("只清空已导入的资料，历史对话会保留。继续吗？")) {
         return;
     }
-    setHint("正在清空资料库");
+    setLibraryResult("正在清空资料库");
     try {
         const response = await fetch(apiBase + "/api/documents", { method: "DELETE" });
         const body = await response.json().catch(() => ({}));
         if (!response.ok) {
-            throw new Error(body.message || body.error || "清空失败");
+            throw new Error(errorText(body, "清空失败"));
         }
-        setHint("已清空 " + (body.deletedCount ?? 0) + " 条资料");
+        setLibraryResult("已清空 " + (body.deletedCount ?? 0) + " 条资料");
+        await loadLibrary();
     } catch (error) {
-        setHint(error.message || "无法连接后端", true);
+        setLibraryResult(error.message || "无法连接后端", true);
     }
 }
 

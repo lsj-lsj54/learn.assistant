@@ -14,6 +14,6 @@ public enum ChatMode {
     }
 
     public String waitingStatus() {
-        return this == TASK ? "正在调用工具" : "正在检索";
+        return this == TASK ? "正在思考" : "正在检索";
     }
 }

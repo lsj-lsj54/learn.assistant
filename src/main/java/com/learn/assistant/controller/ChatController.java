@@ -80,6 +80,9 @@ public class ChatController {
         if (piece.kind() == ChatPiece.Kind.SOURCE && piece.source() != null) {
             return ServerSentEvent.<String>builder().event("source").data(ChatSources.wire(piece.source())).build();
         }
+        if (piece.kind() == ChatPiece.Kind.TOOL && piece.tool() != null) {
+            return ServerSentEvent.<String>builder().event("tool").data(piece.tool().wire()).build();
+        }
         return ServerSentEvent.builder(piece.text()).build();
     }
 

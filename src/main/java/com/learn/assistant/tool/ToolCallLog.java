@@ -27,11 +27,21 @@ final class ToolCallLog {
         try {
             String result = action.get();
             write(tool, arguments, result, started);
+            publish(tool, arguments, result);
             return result;
         }
         catch (RuntimeException exception) {
-            write(tool, arguments, "异常: " + exception.getMessage(), started);
+            String failure = "异常: " + exception.getMessage();
+            write(tool, arguments, failure, started);
+            publish(tool, arguments, failure);
             throw exception;
+        }
+    }
+
+    private static void publish(String tool, String arguments, String result) {
+        ToolActivity activity = ToolActivity.current();
+        if (activity != null) {
+            activity.finish(tool, arguments, result);
         }
     }
 

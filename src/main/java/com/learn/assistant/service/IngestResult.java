@@ -1,4 +1,11 @@
 package com.learn.assistant.service;
 
-public record IngestResult(int added, int skipped) {
+import java.util.List;
+
+public record IngestResult(int added, int skipped, List<FileIngest> files) {
+
+    public IngestResult {
+        files = files == null ? List.of() : List.copyOf(files);
+    }
 }
+

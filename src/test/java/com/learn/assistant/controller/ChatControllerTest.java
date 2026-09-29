@@ -4,6 +4,7 @@ import com.learn.assistant.chat.ChatMode;
 import com.learn.assistant.chat.ChatPiece;
 import com.learn.assistant.service.ChatAnswer;
 import com.learn.assistant.service.ChatService;
+import com.learn.assistant.tool.ToolStep;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,6 +82,33 @@ class ChatControllerTest {
         assertTrue(body.contains("data:你"));
         assertTrue(body.contains("data:好"));
         assertEquals(2, body.lines().filter(line -> line.startsWith("data:")).count());
+    }
+
+    @Test
+    void streamsToolNameArgumentsAndResult() throws Exception {
+        when(chatService.stream(eq("下载泰山"), eq("c1"), nullable(ChatMode.class)))
+                .thenReturn(Flux.just(ChatPiece.status("搜索"),
+                        ChatPiece.tool(new ToolStep("搜索", "query=泰山", "没有搜索到结果")),
+                        ChatPiece.delta("没有找到")));
+
+        var started = mockMvc.perform(post("/api/chat/stream")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.TEXT_EVENT_STREAM)
+                        .content("{\"message\":\"下载泰山\",\"conversationId\":\"c1\",\"mode\":\"task\"}"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        MvcResult streamed = mockMvc.perform(asyncDispatch(started))
+                .andExpect(status().isOk())
+                .andReturn();
+        String body = streamed.getResponse().getContentAsString(StandardCharsets.UTF_8);
+
+        assertTrue(body.contains("event:status"));
+        assertTrue(body.contains("data:搜索"));
+        assertTrue(body.contains("event:tool"));
+        assertTrue(body.contains("\"name\":\"搜索\""));
+        assertTrue(body.contains("\"arguments\":\"query=泰山\""));
+        assertTrue(body.contains("\"result\":\"没有搜索到结果\""));
     }
 
     @Test

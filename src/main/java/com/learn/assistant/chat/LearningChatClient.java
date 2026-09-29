@@ -5,6 +5,9 @@ import com.learn.assistant.properties.ChatProperties;
 import com.learn.assistant.service.ChatAnswer;
 import com.learn.assistant.service.ConversationClient;
 import com.learn.assistant.tool.AssistantToolCatalog;
+import com.learn.assistant.tool.ToolActivity;
+import com.learn.assistant.tool.ToolNames;
+import com.learn.assistant.tool.ToolStep;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -50,12 +53,17 @@ public class LearningChatClient implements ConversationClient {
 
     @Override
     public Flux<ChatPiece> stream(String message, String conversationId, ChatMode mode) {
+        ToolActivity activity = new ToolActivity();
         AtomicBoolean sourcesSent = new AtomicBoolean();
         AtomicBoolean generating = new AtomicBoolean();
         Flux<ChatPiece> answer = prompt(message, conversationId, mode)
                 .stream()
                 .chatClientResponse()
-                .concatMap(response -> Flux.fromIterable(pieces(response, sourcesSent, generating)));
+                .contextWrite(context -> context.put(ToolActivity.CONTEXT_KEY, activity))
+                .concatMap(response -> Flux.fromIterable(pieces(response, sourcesSent, generating, activity)))
+                .concatWith(Flux.defer(() -> Flux.fromIterable(toolPieces(activity))))
+                .onErrorResume(error -> Flux.concat(Flux.defer(() -> Flux.fromIterable(toolPieces(activity))),
+                        Flux.error(error)));
         return Flux.concat(Flux.just(ChatPiece.status(mode.waitingStatus())), answer);
     }
 
@@ -72,8 +80,9 @@ public class LearningChatClient implements ConversationClient {
     }
 
     private static List<ChatPiece> pieces(ChatClientResponse response, AtomicBoolean sourcesSent,
-            AtomicBoolean generating) {
+            AtomicBoolean generating, ToolActivity activity) {
         List<ChatPiece> pieces = new ArrayList<>();
+        pieces.addAll(toolPieces(activity));
         if (sourcesSent.compareAndSet(false, true)) {
             for (var source : ChatSources.from(response)) {
                 pieces.add(ChatPiece.source(source));
@@ -84,7 +93,7 @@ public class LearningChatClient implements ConversationClient {
             return pieces;
         }
         if (output.hasToolCalls()) {
-            pieces.add(ChatPiece.status("正在调用工具"));
+            pieces.add(ChatPiece.status(toolStatus(output)));
         }
         String text = output.getText();
         if (text != null && !text.isEmpty()) {
@@ -94,6 +103,28 @@ public class LearningChatClient implements ConversationClient {
             pieces.add(ChatPiece.delta(text));
         }
         return pieces;
+    }
+
+    private static List<ChatPiece> toolPieces(ToolActivity activity) {
+        List<ChatPiece> pieces = new ArrayList<>();
+        for (ToolStep step : activity.drain()) {
+            pieces.add(ChatPiece.tool(step));
+        }
+        return pieces;
+    }
+
+    private static String toolStatus(AssistantMessage output) {
+        List<String> names = new ArrayList<>();
+        for (AssistantMessage.ToolCall call : output.getToolCalls()) {
+            String name = ToolNames.display(call.name());
+            if (!names.contains(name)) {
+                names.add(name);
+            }
+        }
+        if (names.isEmpty()) {
+            return "工具";
+        }
+        return String.join("、", names);
     }
 
     private static String text(ChatClientResponse response) {
