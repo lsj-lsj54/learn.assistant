@@ -56,6 +56,10 @@ public class WebSearchTool {
 
     @Tool(description = ToolPrompts.SEARCH)
     public String search(@ToolParam(description = ToolPrompts.SEARCH_QUERY) String query) {
+        return ToolCallLog.record("WebSearchTool.search", "query=" + query, () -> searchQuery(query));
+    }
+
+    private String searchQuery(String query) {
         if (apiKey.isBlank()) {
             return "搜索失败: 未配置博查 API Key";
         }

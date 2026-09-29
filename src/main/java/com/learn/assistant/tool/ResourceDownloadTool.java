@@ -42,6 +42,11 @@ public class ResourceDownloadTool {
     public String download(
             @ToolParam(description = ToolPrompts.DOWNLOAD_URL) String url,
             @ToolParam(description = ToolPrompts.DOWNLOAD_FILE_NAME, required = false) String fileName) {
+        return ToolCallLog.record("ResourceDownloadTool.download", "url=" + url + ", fileName=" + fileName,
+                () -> downloadFile(url, fileName));
+    }
+
+    private String downloadFile(String url, String fileName) {
         try {
             publicHttp.checkPublicHttp(url);
             String name = resolveFileName(url, fileName);

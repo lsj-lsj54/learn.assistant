@@ -43,6 +43,12 @@ public class PdfWriteTool {
     public String writePdf(
             @ToolParam(description = ToolPrompts.WRITE_PDF_NAME) String fileName,
             @ToolParam(description = ToolPrompts.WRITE_PDF_CONTENT) String content) {
+        return ToolCallLog.record("PdfWriteTool.writePdf",
+                "fileName=" + fileName + ", contentLength=" + (content == null ? 0 : content.length()),
+                () -> writePdfFile(fileName, content));
+    }
+
+    private String writePdfFile(String fileName, String content) {
         try {
             String safeName = withPdfExtension(projectPaths.safeRelative(fileName));
             Path directory = projectPaths.pdfDirectory();

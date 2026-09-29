@@ -30,6 +30,10 @@ public class WebScrapeTool {
 
     @Tool(description = ToolPrompts.SCRAPE)
     public String scrape(@ToolParam(description = ToolPrompts.SCRAPE_URL) String url) {
+        return ToolCallLog.record("WebScrapeTool.scrape", "url=" + url, () -> scrapePage(url));
+    }
+
+    private String scrapePage(String url) {
         try {
             publicHttp.checkPublicHttp(url);
             String text = Jsoup.connect(url)
