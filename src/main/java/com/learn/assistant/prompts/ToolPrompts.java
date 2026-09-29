@@ -2,23 +2,23 @@ package com.learn.assistant.prompts;
 
 public final class ToolPrompts {
 
-    public static final String LIST_FILES = "列出项目目录中的文件和子目录。路径相对于项目根目录，空字符串表示项目根目录。";
+    public static final String LIST_FILES = "列出 pdf 或 res 目录中的文件和子目录。路径以 pdf 或 res 开头，例如 res、res/风景、pdf/课程。不能访问这两个目录以外的文件。";
 
-    public static final String LIST_FILES_PATH = "相对项目根目录的路径，可为空";
+    public static final String LIST_FILES_PATH = "以 pdf 或 res 开头的路径";
 
-    public static final String READ_TEXT = "读取项目内的文本文件。路径相对于项目根目录。";
+    public static final String READ_TEXT = "读取 pdf 或 res 目录中的文本文件。路径以 pdf 或 res 开头，例如 res/风景/说明.txt。";
 
-    public static final String READ_TEXT_PATH = "相对项目根目录的文件路径";
+    public static final String READ_TEXT_PATH = "以 pdf 或 res 开头的文件路径";
 
-    public static final String WRITE_TEXT = "把文本写入项目内的文件。路径相对于项目根目录，父目录不存在时会创建。";
+    public static final String WRITE_TEXT = "把文本写入 pdf 或 res 目录。路径以 pdf 或 res 开头，父目录不存在时会创建。不能写到这两个目录以外。";
 
-    public static final String WRITE_TEXT_PATH = "相对项目根目录的文件路径";
+    public static final String WRITE_TEXT_PATH = "以 pdf 或 res 开头的文件路径";
 
     public static final String WRITE_TEXT_CONTENT = "要写入的文本";
 
-    public static final String DELETE_FILE = "删除项目内的文件。路径相对于项目根目录。不能删除目录。";
+    public static final String DELETE_FILE = "删除 pdf 或 res 目录中的文件。路径以 pdf 或 res 开头。不能删除目录，也不能删这两个目录以外的文件。";
 
-    public static final String DELETE_FILE_PATH = "相对项目根目录的文件路径";
+    public static final String DELETE_FILE_PATH = "以 pdf 或 res 开头的文件路径";
 
     public static final String WRITE_PDF = "把文本写成 PDF，保存到项目的 src/main/resources/pdf 目录。文件名可以带子文件夹，例如 课程/note.pdf，没有该文件夹时会新建。";
 

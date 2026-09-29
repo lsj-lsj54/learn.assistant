@@ -37,7 +37,7 @@ public class FileOperationTool {
     public String listFiles(@ToolParam(description = ToolPrompts.LIST_FILES_PATH) String relativePath) {
         return ToolCallLog.record("FileOperationTool.listFiles", "relativePath=" + relativePath, () -> {
             try {
-                Path directory = projectPaths.resolveWithin(projectPaths.root(), relativePath);
+                Path directory = projectPaths.resolveData(relativePath);
                 if (!Files.isDirectory(directory)) {
                     return "不是目录: " + directory;
                 }
@@ -57,7 +57,7 @@ public class FileOperationTool {
     public String readText(@ToolParam(description = ToolPrompts.READ_TEXT_PATH) String relativePath) {
         return ToolCallLog.record("FileOperationTool.readText", "relativePath=" + relativePath, () -> {
             try {
-                Path file = projectPaths.resolveWithin(projectPaths.root(), relativePath);
+                Path file = projectPaths.resolveData(relativePath);
                 if (!Files.isRegularFile(file)) {
                     return "文件不存在: " + file;
                 }
@@ -80,7 +80,7 @@ public class FileOperationTool {
         return ToolCallLog.record("FileOperationTool.writeText",
                 "relativePath=" + relativePath + ", contentLength=" + (content == null ? 0 : content.length()), () -> {
                     try {
-                        Path file = projectPaths.resolveWithin(projectPaths.root(), relativePath);
+                        Path file = projectPaths.resolveData(relativePath);
                         Files.createDirectories(file.getParent());
                         Files.writeString(file, content == null ? "" : content, StandardCharsets.UTF_8);
                         return "已写入 " + file;
@@ -95,7 +95,7 @@ public class FileOperationTool {
     public String deleteFile(@ToolParam(description = ToolPrompts.DELETE_FILE_PATH) String relativePath) {
         return ToolCallLog.record("FileOperationTool.deleteFile", "relativePath=" + relativePath, () -> {
             try {
-                Path file = projectPaths.resolveWithin(projectPaths.root(), relativePath);
+                Path file = projectPaths.resolveData(relativePath);
                 if (Files.isDirectory(file)) {
                     return "不能删除目录";
                 }

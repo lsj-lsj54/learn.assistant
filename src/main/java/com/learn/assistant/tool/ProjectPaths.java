@@ -1,8 +1,8 @@
 package com.learn.assistant.tool;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.nio.file.Path;
 
 public class ProjectPaths {
 
@@ -59,6 +59,38 @@ public class ProjectPaths {
             throw new IllegalArgumentException("文件名不能为空");
         }
         return String.join("/", kept);
+    }
+
+    public Path resolveData(String relativePath) {
+        String unified = relativePath == null ? "" : relativePath.trim().replace('\\', '/');
+        while (unified.startsWith("/")) {
+            unified = unified.substring(1);
+        }
+        String rest = stripDataPrefix(unified, "pdf");
+        Path base = pdfDirectory();
+        if (rest == null) {
+            rest = stripDataPrefix(unified, "res");
+            base = downloadDirectory();
+        }
+        if (rest == null) {
+            throw new IllegalArgumentException("只能操作 pdf 或 res 目录");
+        }
+        Path directory = base.toAbsolutePath().normalize();
+        if (rest.isBlank()) {
+            return directory;
+        }
+        return resolveWithin(directory, rest);
+    }
+
+    private static String stripDataPrefix(String path, String prefix) {
+        if (path.equalsIgnoreCase(prefix)) {
+            return "";
+        }
+        String withSlash = prefix + "/";
+        if (path.length() >= withSlash.length() && path.substring(0, withSlash.length()).equalsIgnoreCase(withSlash)) {
+            return path.substring(withSlash.length());
+        }
+        return null;
     }
 
     public Path resolveWithin(Path base, String relativePath) {

@@ -18,78 +18,81 @@ class FileOperationToolTest {
     @Test
     void listFiles() {
         FileOperationTool tool = tool();
-        tool.writeText("notes/a.txt", "你好");
+        tool.writeText("res/notes/a.txt", "你好");
 
-        String listing = tool.listFiles("notes");
+        String listing = tool.listFiles("res/notes");
 
         assertTrue(listing.contains("a.txt"));
     }
 
     @Test
     void listFilesOnEmptyDirectory() throws Exception {
-        Files.createDirectories(tempDir.resolve("empty"));
+        Files.createDirectories(tempDir.resolve("res").resolve("empty"));
 
-        assertEquals("目录为空", tool().listFiles("empty"));
+        assertEquals("目录为空", tool().listFiles("res/empty"));
     }
 
     @Test
     void listFilesRejectsFilePath() {
         FileOperationTool tool = tool();
-        tool.writeText("a.txt", "你好");
+        tool.writeText("res/a.txt", "你好");
 
-        assertTrue(tool.listFiles("a.txt").startsWith("不是目录"));
+        assertTrue(tool.listFiles("res/a.txt").startsWith("不是目录"));
     }
 
     @Test
     void readText() {
         FileOperationTool tool = tool();
-        tool.writeText("a.txt", "你好");
+        tool.writeText("pdf/a.txt", "你好");
 
-        assertEquals("你好", tool.readText("a.txt"));
+        assertEquals("你好", tool.readText("pdf/a.txt"));
     }
 
     @Test
     void readTextWhenMissing() {
-        assertTrue(tool().readText("missing.txt").startsWith("文件不存在"));
+        assertTrue(tool().readText("res/missing.txt").startsWith("文件不存在"));
     }
 
     @Test
     void writeText() {
-        String result = tool().writeText("notes/a.txt", "你好");
+        String result = tool().writeText("res/notes/a.txt", "你好");
 
         assertTrue(result.startsWith("已写入"));
-        assertEquals("你好", tool().readText("notes/a.txt"));
+        assertEquals("你好", tool().readText("res/notes/a.txt"));
+        assertTrue(Files.exists(tempDir.resolve("res").resolve("notes").resolve("a.txt")));
     }
 
     @Test
-    void writeTextRejectsPathOutsideProject() {
-        assertTrue(tool().writeText("../outside.txt", "x").contains("路径超出允许目录"));
+    void writeTextRejectsPathOutsideDataDirectories() {
+        assertTrue(tool().writeText("src/main/java/Note.java", "x").contains("只能操作 pdf 或 res 目录"));
+        assertTrue(tool().writeText("res/../outside.txt", "x").contains("路径超出允许目录"));
     }
 
     @Test
     void writeTextRejectsEnvFile() {
-        assertTrue(tool().writeText(".env", "secret").contains("不允许操作 .env"));
+        assertTrue(tool().writeText("res/.env", "secret").contains("不允许操作 .env"));
+        assertTrue(tool().writeText(".env", "secret").contains("只能操作 pdf 或 res 目录"));
     }
 
     @Test
     void deleteFile() {
         FileOperationTool tool = tool();
-        tool.writeText("a.txt", "你好");
+        tool.writeText("res/a.txt", "你好");
 
-        assertTrue(tool.deleteFile("a.txt").startsWith("已删除"));
-        assertTrue(tool.readText("a.txt").startsWith("文件不存在"));
+        assertTrue(tool.deleteFile("res/a.txt").startsWith("已删除"));
+        assertTrue(tool.readText("res/a.txt").startsWith("文件不存在"));
     }
 
     @Test
     void deleteFileRejectsDirectory() throws Exception {
-        Files.createDirectories(tempDir.resolve("notes"));
+        Files.createDirectories(tempDir.resolve("res").resolve("notes"));
 
-        assertEquals("不能删除目录", tool().deleteFile("notes"));
+        assertEquals("不能删除目录", tool().deleteFile("res/notes"));
     }
 
     @Test
     void deleteFileWhenMissing() {
-        assertTrue(tool().deleteFile("missing.txt").startsWith("文件不存在"));
+        assertTrue(tool().deleteFile("pdf/missing.txt").startsWith("文件不存在"));
     }
 
     private FileOperationTool tool() {
