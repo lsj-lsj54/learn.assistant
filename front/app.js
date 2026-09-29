@@ -65,12 +65,12 @@ function saveChats() {
 
 function render() {
     const chat = chats.find((item) => item.id === currentId);
-    const hasMessages = Boolean(chat?.messages.length);
+    const hasMessages = Boolean(chat?.messages?.length);
     document.body.classList.toggle("empty", !hasMessages);
     welcome.hidden = hasMessages;
     messagesEl.hidden = !hasMessages;
     messagesEl.innerHTML = "";
-    if (chat) {
+    if (chat?.messages) {
         for (const message of chat.messages) {
             const item = document.createElement("div");
             item.className = "message " + message.role + (message.pending ? " pending" : "");
@@ -315,8 +315,13 @@ async function loadSettings() {
         document.querySelector("#readMax").textContent = body.readMaxChars + " 字";
         document.querySelector("#memoryMax").textContent = body.maxMemoryMessages + " 条";
         document.querySelector("#emptyContext").textContent = body.allowEmptyContext ? "允许" : "不允许";
+        setHint("");
     } catch {
         document.querySelector("#scrapeMax").textContent = "未连接";
+        document.querySelector("#readMax").textContent = "未连接";
+        document.querySelector("#memoryMax").textContent = "未连接";
+        document.querySelector("#emptyContext").textContent = "未连接";
+        setHint("无法连接后端", true);
     }
 }
 
