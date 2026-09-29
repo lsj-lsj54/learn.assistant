@@ -100,6 +100,17 @@ body {
     font: inherit;
 }
 
+.chat-rename-input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #333;
+    border-radius: 10px;
+    background: #111;
+    color: var(--text);
+    font: inherit;
+    padding: 8px 10px;
+}
+
 .chat-delete:hover {
     color: var(--danger);
     background: #161616;

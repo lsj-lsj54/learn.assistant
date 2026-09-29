@@ -99,6 +99,10 @@ function render() {
             sidebar.classList.remove("open");
             render();
         });
+        button.addEventListener("contextmenu", (event) => {
+            event.preventDefault();
+            startRename(item, row);
+        });
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "chat-delete";
@@ -109,6 +113,42 @@ function render() {
         chatList.appendChild(row);
     }
     send.disabled = sending || input.value.trim() === "";
+}
+
+function startRename(item, row) {
+    const button = row.querySelector(".chat-item");
+    const field = document.createElement("input");
+    field.type = "text";
+    field.className = "chat-rename-input";
+    field.value = item.title;
+    field.maxLength = 40;
+    field.setAttribute("aria-label", "对话名称");
+    button.replaceWith(field);
+    field.focus();
+    field.select();
+    let closed = false;
+    const finish = (save) => {
+        if (closed) {
+            return;
+        }
+        closed = true;
+        const next = field.value.trim();
+        if (save && next) {
+            item.title = next;
+            saveChats();
+        }
+        render();
+    };
+    field.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            finish(true);
+        } else if (event.key === "Escape") {
+            event.preventDefault();
+            finish(false);
+        }
+    });
+    field.addEventListener("blur", () => finish(true));
 }
 
 function scrollToLatest() {
