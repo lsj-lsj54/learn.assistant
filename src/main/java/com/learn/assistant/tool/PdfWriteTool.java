@@ -1,5 +1,6 @@
 package com.learn.assistant.tool;
 
+import com.learn.assistant.prompts.ToolPrompts;
 import com.learn.assistant.properties.ToolProperties;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -38,10 +39,10 @@ public class PdfWriteTool {
         this.chineseFont = Path.of(toolProperties.getPdfFont());
     }
 
-    @Tool(description = "把文本写成 PDF，保存到项目的 src/main/resources/pdf 目录。文件名可以带子文件夹，例如 课程/note.pdf，没有该文件夹时会新建。")
+    @Tool(description = ToolPrompts.WRITE_PDF)
     public String writePdf(
-            @ToolParam(description = "保存路径，例如 note.pdf 或 课程/note.pdf") String fileName,
-            @ToolParam(description = "要写入 PDF 的正文") String content) {
+            @ToolParam(description = ToolPrompts.WRITE_PDF_NAME) String fileName,
+            @ToolParam(description = ToolPrompts.WRITE_PDF_CONTENT) String content) {
         try {
             String safeName = withPdfExtension(projectPaths.safeRelative(fileName));
             Path directory = projectPaths.pdfDirectory();

@@ -2,6 +2,7 @@ package com.learn.assistant.tool;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.learn.assistant.prompts.ToolPrompts;
 import com.learn.assistant.properties.ToolProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,8 +54,8 @@ public class WebSearchTool {
         }
     }
 
-    @Tool(description = "用博查 Web Search API 联网搜索。返回网页链接和文件直链。用户要保存文件时，把直链交给下载工具：PDF 会进 pdf 目录，其他资源进 res。不要改去抓取网页。")
-    public String search(@ToolParam(description = "搜索关键词") String query) {
+    @Tool(description = ToolPrompts.SEARCH)
+    public String search(@ToolParam(description = ToolPrompts.SEARCH_QUERY) String query) {
         if (apiKey.isBlank()) {
             return "搜索失败: 未配置博查 API Key";
         }

@@ -1,5 +1,6 @@
 package com.learn.assistant.tool;
 
+import com.learn.assistant.prompts.ToolPrompts;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.core.annotation.Order;
@@ -37,10 +38,10 @@ public class ResourceDownloadTool {
         this.publicHttp = publicHttp;
     }
 
-    @Tool(description = "下载 http 或 https 文件直链。PDF 保存到 src/main/resources/pdf，其他资源保存到 res。必须使用「分类/文件名」，例如 游戏/威龙.png、风景/泰山.jpg。先看返回的已有分类，选最合适的；没有就新建一个简短中文分类。不要使用普通网页地址。")
+    @Tool(description = ToolPrompts.DOWNLOAD)
     public String download(
-            @ToolParam(description = "以 http 或 https 开头的文件直链") String url,
-            @ToolParam(description = "分类/文件名，例如 游戏/威龙.png 或 风景/泰山.jpg", required = false) String fileName) {
+            @ToolParam(description = ToolPrompts.DOWNLOAD_URL) String url,
+            @ToolParam(description = ToolPrompts.DOWNLOAD_FILE_NAME, required = false) String fileName) {
         try {
             publicHttp.checkPublicHttp(url);
             String name = resolveFileName(url, fileName);
@@ -114,8 +115,7 @@ public class ResourceDownloadTool {
                 }
             }
         }
-        return "需要按分类保存，文件还没写入。已有分类：" + existing
-                + "。请选择最合适的已有分类，用「分类/文件名」再次下载。没有合适分类就新建一个简短中文分类，例如 游戏/威龙.png、风景/泰山.jpg。";
+        return ToolPrompts.downloadNeedsCategory(existing);
     }
 
     Path directoryFor(String contentType, String fileName) {

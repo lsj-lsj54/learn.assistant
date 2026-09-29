@@ -44,10 +44,6 @@ spring:
 
 learn:
   chat:
-    system-prompt: |
-      你是学习助手，用简洁的中文回答。记住同一段对话里用户说过的信息，并在后续问题中使用。
-      一件事需要多个工具时，在同一次回答里按顺序调用。用户要下载文件时，先搜索拿到直链，再调用下载工具。PDF 保存到 pdf 目录，其他资源保存到 res。保存路径必须是「分类/文件名」。先根据内容选择已有分类，例如威龙放进游戏，泰山放进风景；没有合适分类就新建一个简短中文分类。不要只把链接留给用户，也不要改去抓取网页。
-      不要根据以前的失败判断工具不可用。每次都重新调用工具，只有这次工具返回未配置时才能说密钥没有配置。
     max-memory-messages: 20
   paths:
     pdf-dir: src/main/resources/pdf
@@ -75,6 +71,15 @@ learn:
       max-token-count: 8192
       reserve-percentage: 0.1
       encoding: CL100K_BASE
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: false
+
+knife4j:
+  enable: true
 
 mybatis-plus:
   mapper-locations: classpath:/mapper/**/*.xml

@@ -1,5 +1,6 @@
 package com.learn.assistant.tool;
 
+import com.learn.assistant.prompts.ToolPrompts;
 import com.learn.assistant.properties.ToolProperties;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -32,8 +33,8 @@ public class FileOperationTool {
         this.maxTextLength = ToolProperties.positive(toolProperties.getReadMaxChars(), 100_000);
     }
 
-    @Tool(description = "列出项目目录中的文件和子目录。路径相对于项目根目录，空字符串表示项目根目录。")
-    public String listFiles(@ToolParam(description = "相对项目根目录的路径，可为空") String relativePath) {
+    @Tool(description = ToolPrompts.LIST_FILES)
+    public String listFiles(@ToolParam(description = ToolPrompts.LIST_FILES_PATH) String relativePath) {
         try {
             Path directory = projectPaths.resolveWithin(projectPaths.root(), relativePath);
             if (!Files.isDirectory(directory)) {
@@ -50,8 +51,8 @@ public class FileOperationTool {
         }
     }
 
-    @Tool(description = "读取项目内的文本文件。路径相对于项目根目录。")
-    public String readText(@ToolParam(description = "相对项目根目录的文件路径") String relativePath) {
+    @Tool(description = ToolPrompts.READ_TEXT)
+    public String readText(@ToolParam(description = ToolPrompts.READ_TEXT_PATH) String relativePath) {
         try {
             Path file = projectPaths.resolveWithin(projectPaths.root(), relativePath);
             if (!Files.isRegularFile(file)) {
@@ -68,10 +69,10 @@ public class FileOperationTool {
         }
     }
 
-    @Tool(description = "把文本写入项目内的文件。路径相对于项目根目录，父目录不存在时会创建。")
+    @Tool(description = ToolPrompts.WRITE_TEXT)
     public String writeText(
-            @ToolParam(description = "相对项目根目录的文件路径") String relativePath,
-            @ToolParam(description = "要写入的文本") String content) {
+            @ToolParam(description = ToolPrompts.WRITE_TEXT_PATH) String relativePath,
+            @ToolParam(description = ToolPrompts.WRITE_TEXT_CONTENT) String content) {
         try {
             Path file = projectPaths.resolveWithin(projectPaths.root(), relativePath);
             Files.createDirectories(file.getParent());
@@ -83,8 +84,8 @@ public class FileOperationTool {
         }
     }
 
-    @Tool(description = "删除项目内的文件。路径相对于项目根目录。不能删除目录。")
-    public String deleteFile(@ToolParam(description = "相对项目根目录的文件路径") String relativePath) {
+    @Tool(description = ToolPrompts.DELETE_FILE)
+    public String deleteFile(@ToolParam(description = ToolPrompts.DELETE_FILE_PATH) String relativePath) {
         try {
             Path file = projectPaths.resolveWithin(projectPaths.root(), relativePath);
             if (Files.isDirectory(file)) {

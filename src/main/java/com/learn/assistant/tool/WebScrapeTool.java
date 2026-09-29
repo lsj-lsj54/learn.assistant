@@ -1,5 +1,6 @@
 package com.learn.assistant.tool;
 
+import com.learn.assistant.prompts.ToolPrompts;
 import com.learn.assistant.properties.ToolProperties;
 import org.jsoup.Jsoup;
 import org.springframework.ai.tool.annotation.Tool;
@@ -27,8 +28,8 @@ public class WebScrapeTool {
         this.maxTextLength = ToolProperties.positive(toolProperties.getScrapeMaxChars(), 8_000);
     }
 
-    @Tool(description = "抓取网页正文，去掉脚本和样式后返回文本。不能从页面得到文件地址。下载文件请把直链交给下载工具。")
-    public String scrape(@ToolParam(description = "以 http 或 https 开头的网页地址") String url) {
+    @Tool(description = ToolPrompts.SCRAPE)
+    public String scrape(@ToolParam(description = ToolPrompts.SCRAPE_URL) String url) {
         try {
             publicHttp.checkPublicHttp(url);
             String text = Jsoup.connect(url)

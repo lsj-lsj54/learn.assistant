@@ -22,6 +22,7 @@
         <spring-ai.version>2.0.1</spring-ai.version>
         <mybatis-plus.version>3.5.17</mybatis-plus.version>
         <knife4j.version>5.7.5</knife4j.version>
+        <springdoc.version>3.0.3</springdoc.version>
         <jsoup.version>1.21.1</jsoup.version>
     </properties>
 
@@ -50,6 +51,17 @@
             <groupId>com.baizhukui</groupId>
             <artifactId>knife4j-openapi3-boot4-spring-boot-starter</artifactId>
             <version>${knife4j.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springdoc</groupId>
+                    <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+            <version>${springdoc.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
