@@ -3,6 +3,9 @@ spring:
     import: optional:file:.env[.properties]
   application:
     name: learning-assistant
+  mvc:
+    async:
+      request-timeout: 10m
   datasource:
     url: ${DATASOURCE_URL}
     username: learning

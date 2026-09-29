@@ -136,25 +136,110 @@ async function submit() {
     sending = true;
     setHint("");
     render();
+    let accumulated = "";
     try {
-        const response = await fetch(apiBase + "/api/chat", {
+        const response = await fetch(apiBase + "/api/chat/stream", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "text/event-stream"
+            },
             body: JSON.stringify({ message: text, conversationId: currentId })
         });
-        const body = await response.json().catch(() => ({}));
         if (!response.ok) {
+            const body = await response.json().catch(() => ({}));
             throw new Error(body.message || body.error || "请求失败");
         }
-        chat.messages[chat.messages.length - 1] = { role: "assistant", content: body.reply ?? "" };
+        if (!response.body) {
+            throw new Error("请求失败");
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+            const chunk = await reader.read();
+            if (chunk.done) {
+                buffer += decoder.decode();
+                break;
+            }
+            buffer += decoder.decode(chunk.value, { stream: true });
+            const parsed = consumeSse(buffer);
+            buffer = parsed.rest;
+            accumulated = applyStreamEvents(chat, accumulated, parsed.events);
+        }
+        const tail = consumeSse(buffer.trim() ? buffer + "\n\n" : buffer);
+        accumulated = applyStreamEvents(chat, accumulated, tail.events);
+        const pending = chat.messages[chat.messages.length - 1];
+        pending.content = accumulated;
+        pending.pending = false;
     } catch (error) {
-        chat.messages.pop();
+        const pending = chat.messages[chat.messages.length - 1];
+        const kept = pending && pending.role === "assistant" && pending.content !== "正在思考";
+        if (!kept) {
+            chat.messages.pop();
+        } else {
+            pending.pending = false;
+        }
         setHint(error.message || "无法连接后端", true);
     } finally {
         sending = false;
         saveChats();
         render();
     }
+}
+
+function applyStreamEvents(chat, accumulated, events) {
+    for (const event of events) {
+        if (event.name === "error") {
+            const failure = new Error(event.data || "请求失败");
+            throw failure;
+        }
+        accumulated += event.data;
+        showAssistant(chat, accumulated);
+    }
+    return accumulated;
+}
+
+function showAssistant(chat, content) {
+    const message = chat.messages[chat.messages.length - 1];
+    message.content = content;
+    message.pending = false;
+    if (currentId !== chat.id) {
+        return;
+    }
+    const node = messagesEl.lastElementChild;
+    if (!node || !node.classList.contains("assistant")) {
+        render();
+        return;
+    }
+    node.textContent = content;
+    node.classList.remove("pending");
+    scrollToLatest();
+}
+
+function consumeSse(buffer) {
+    const events = [];
+    const normalized = buffer.replace(/\r\n/g, "\n");
+    let rest = normalized;
+    let boundary = rest.indexOf("\n\n");
+    while (boundary >= 0) {
+        const block = rest.slice(0, boundary);
+        rest = rest.slice(boundary + 2);
+        let name = "message";
+        const dataLines = [];
+        for (const line of block.split("\n")) {
+            if (line.startsWith("event:")) {
+                name = line.slice(6).trim();
+            } else if (line.startsWith("data:")) {
+                dataLines.push(line.slice(5).replace(/^ /, ""));
+            }
+        }
+        if (dataLines.length > 0) {
+            events.push({ name, data: dataLines.join("\n") });
+        }
+        boundary = rest.indexOf("\n\n");
+    }
+    return { events, rest };
 }
 
 async function importPdf() {

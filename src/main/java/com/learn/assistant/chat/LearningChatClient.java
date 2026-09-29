@@ -4,6 +4,7 @@ import com.learn.assistant.service.ConversationClient;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 @Component
 public class LearningChatClient implements ConversationClient {
@@ -20,6 +21,15 @@ public class LearningChatClient implements ConversationClient {
                 .user(message)
                 .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, conversationId))
                 .call()
+                .content();
+    }
+
+    @Override
+    public Flux<String> stream(String message, String conversationId) {
+        return chatClient.prompt()
+                .user(message)
+                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, conversationId))
+                .stream()
                 .content();
     }
 }

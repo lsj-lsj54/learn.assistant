@@ -1,0 +1,97 @@
+package com.learn.assistant.controller;
+
+import com.learn.assistant.service.ChatService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import reactor.core.publisher.Flux;
+
+import java.nio.charset.StandardCharsets;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@ExtendWith(MockitoExtension.class)
+class ChatControllerTest {
+
+    @Mock
+    private ChatService chatService;
+
+    private MockMvc mockMvc;
+
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(new ChatController(chatService))
+                .setMessageConverters(new StringHttpMessageConverter(StandardCharsets.UTF_8),
+                        new JacksonJsonHttpMessageConverter())
+                .build();
+    }
+
+    @Test
+    void keepsTheBlockingReply() throws Exception {
+        when(chatService.reply("你好", "c1")).thenReturn("完整回答");
+
+        mockMvc.perform(post("/api/chat")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"你好\",\"conversationId\":\"c1\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reply").value("完整回答"));
+    }
+
+    @Test
+    void streamsEachToken() throws Exception {
+        when(chatService.stream("你好", "c1")).thenReturn(Flux.just("你", "", "好"));
+
+        var started = mockMvc.perform(post("/api/chat/stream")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.TEXT_EVENT_STREAM)
+                        .content("{\"message\":\"你好\",\"conversationId\":\"c1\"}"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        MvcResult streamed = mockMvc.perform(asyncDispatch(started))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM))
+                .andReturn();
+        String body = streamed.getResponse().getContentAsString(StandardCharsets.UTF_8);
+
+        assertTrue(body.contains("data:你"));
+        assertTrue(body.contains("data:好"));
+        assertEquals(2, body.lines().filter(line -> line.startsWith("data:")).count());
+    }
+
+    @Test
+    void sendsAnErrorEventWhenStreamingFails() throws Exception {
+        when(chatService.stream("你好", "c1")).thenReturn(Flux.error(new IllegalStateException("模型不可用")));
+
+        var started = mockMvc.perform(post("/api/chat/stream")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.TEXT_EVENT_STREAM)
+                        .content("{\"message\":\"你好\",\"conversationId\":\"c1\"}"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        MvcResult streamed = mockMvc.perform(asyncDispatch(started))
+                .andExpect(status().isOk())
+                .andReturn();
+        String body = streamed.getResponse().getContentAsString(StandardCharsets.UTF_8);
+
+        assertTrue(body.contains("event:error"));
+        assertTrue(body.contains("模型不可用"));
+    }
+}
