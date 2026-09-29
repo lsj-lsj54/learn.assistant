@@ -14,6 +14,7 @@ const stage = document.querySelector("#stage");
 let chats = loadChats();
 let currentId = chats[0]?.id ?? null;
 let sending = false;
+let mode = "study";
 
 document.querySelector("#newChat").addEventListener("click", () => {
     currentId = null;
@@ -28,6 +29,8 @@ document.querySelector("#menu").addEventListener("click", () => {
 
 document.querySelector("#importPdf").addEventListener("click", importPdf);
 document.querySelector("#clearVectors").addEventListener("click", clearVectors);
+document.querySelector("#modeStudy").addEventListener("click", () => setMode("study"));
+document.querySelector("#modeTask").addEventListener("click", () => setMode("task"));
 
 composer.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -74,7 +77,11 @@ function render() {
         for (const message of chat.messages) {
             const item = document.createElement("div");
             item.className = "message " + message.role + (message.pending ? " pending" : "");
-            item.textContent = message.content;
+            const text = document.createElement("div");
+            text.className = "message-text";
+            text.textContent = message.content;
+            item.append(text);
+            appendSources(item, message.sources);
             messagesEl.appendChild(item);
         }
         scrollToLatest();
@@ -144,7 +151,7 @@ async function submit() {
                 "Content-Type": "application/json",
                 Accept: "text/event-stream"
             },
-            body: JSON.stringify({ message: text, conversationId: currentId })
+            body: JSON.stringify({ message: text, conversationId: currentId, mode: mode })
         });
         if (!response.ok) {
             const body = await response.json().catch(() => ({}));
@@ -191,8 +198,15 @@ async function submit() {
 function applyStreamEvents(chat, accumulated, events) {
     for (const event of events) {
         if (event.name === "error") {
-            const failure = new Error(event.data || "请求失败");
-            throw failure;
+            throw new Error(event.data || "请求失败");
+        }
+        if (event.name === "status") {
+            showStatus(chat, event.data);
+            continue;
+        }
+        if (event.name === "source") {
+            addSource(chat, event.data);
+            continue;
         }
         accumulated += event.data;
         showAssistant(chat, accumulated);
@@ -200,21 +214,102 @@ function applyStreamEvents(chat, accumulated, events) {
     return accumulated;
 }
 
+function showStatus(chat, status) {
+    const message = chat.messages[chat.messages.length - 1];
+    if (!message || message.content && !message.pending) {
+        return;
+    }
+    message.content = status || "正在思考";
+    message.pending = true;
+    paintAssistant(chat, message);
+}
+
 function showAssistant(chat, content) {
     const message = chat.messages[chat.messages.length - 1];
     message.content = content;
     message.pending = false;
+    paintAssistant(chat, message);
+}
+
+function addSource(chat, data) {
+    const source = readSource(data);
+    if (!source) {
+        return;
+    }
+    const message = chat.messages[chat.messages.length - 1];
+    message.sources = message.sources || [];
+    const key = source.file + "#" + (source.page ?? "");
+    if (message.sources.some((item) => item.file + "#" + (item.page ?? "") === key)) {
+        return;
+    }
+    message.sources.push(source);
+    paintAssistant(chat, message);
+}
+
+function paintAssistant(chat, message) {
     if (currentId !== chat.id) {
         return;
     }
-    const node = messagesEl.lastElementChild;
+    let node = messagesEl.lastElementChild;
     if (!node || !node.classList.contains("assistant")) {
         render();
+        node = messagesEl.lastElementChild;
+    }
+    if (!node) {
         return;
     }
-    node.textContent = content;
-    node.classList.remove("pending");
+    let text = node.querySelector(".message-text");
+    if (!text) {
+        node.textContent = "";
+        text = document.createElement("div");
+        text.className = "message-text";
+        node.append(text);
+    }
+    text.textContent = message.content;
+    node.classList.toggle("pending", Boolean(message.pending));
+    appendSources(node, message.sources);
     scrollToLatest();
+}
+
+function appendSources(node, sources) {
+    let list = node.querySelector(".sources");
+    if (!sources || sources.length === 0) {
+        if (list) {
+            list.remove();
+        }
+        return;
+    }
+    if (!list) {
+        list = document.createElement("div");
+        list.className = "sources";
+        node.append(list);
+    }
+    list.textContent = sources.map(formatSource).join("\n");
+}
+
+function formatSource(source) {
+    if (source.page == null) {
+        return source.file;
+    }
+    return source.file + " · 第" + source.page + "页";
+}
+
+function readSource(data) {
+    try {
+        const parsed = JSON.parse(data);
+        if (parsed && parsed.file) {
+            return parsed;
+        }
+    } catch {
+        return null;
+    }
+    return null;
+}
+
+function setMode(next) {
+    mode = next;
+    document.querySelector("#modeStudy").classList.toggle("active", mode === "study");
+    document.querySelector("#modeTask").classList.toggle("active", mode === "task");
 }
 
 function consumeSse(buffer) {

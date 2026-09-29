@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -68,6 +69,10 @@ public class DocumentIngestService implements DocumentIngestor {
                 log.info("没有可导入的文档");
                 return new IngestResult(0, 0);
             }
+            int replaced = deleteBySourceFile(documents);
+            if (replaced > 0) {
+                log.info("已替换同名资料 {} 条", replaced);
+            }
             List<Document> chunks = tokenTextSplitter.apply(documents);
             IngestResult result = storeNewChunks(chunks);
             log.info("已导入 {} 段，跳过 {} 段重复", result.added(), result.skipped());
@@ -106,6 +111,26 @@ public class DocumentIngestService implements DocumentIngestor {
             vectorStore.add(fresh);
         }
         return new IngestResult(fresh.size(), skipped);
+    }
+
+    private int deleteBySourceFile(List<Document> documents) {
+        Set<String> files = new LinkedHashSet<>();
+        for (Document document : documents) {
+            Object value = document.getMetadata().get(PdfDocumentSource.SOURCE_FILE);
+            if (value instanceof String file && !file.isBlank()) {
+                files.add(file);
+            }
+        }
+        if (files.isEmpty()) {
+            return 0;
+        }
+        String sql = "DELETE FROM " + VectorTables.qualified(vectorStoreProperties)
+                + " WHERE metadata->>'source_file' = ?";
+        int removed = 0;
+        for (String file : files) {
+            removed += jdbcTemplate.update(sql, file);
+        }
+        return removed;
     }
 
     private int collapseDuplicates() {

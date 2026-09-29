@@ -17,7 +17,7 @@ public final class BuiltinQueryTransformers {
     public static QueryTransformerContributor compression() {
         return contributor("compression", 0, (builder, properties) -> SelectiveQueryTransformer.when(
                 CompressionQueryTransformer.builder().chatClientBuilder(builder).build(),
-                query -> !query.history().isEmpty()));
+                query -> longEnough(query.text(), properties) && !query.history().isEmpty()));
     }
 
     public static QueryTransformerContributor translation() {
@@ -26,7 +26,7 @@ public final class BuiltinQueryTransformers {
                         .chatClientBuilder(builder)
                         .targetLanguage(properties.getRetrieval().getTargetLanguage())
                         .build(),
-                query -> containsLatinLetter(query.text())));
+                query -> longEnough(query.text(), properties) && containsLatinLetter(query.text())));
     }
 
     public static QueryTransformerContributor rewrite() {
@@ -35,7 +35,11 @@ public final class BuiltinQueryTransformers {
                         .chatClientBuilder(builder)
                         .targetSearchSystem("vector store")
                         .build(),
-                query -> query.text().length() > properties.getRetrieval().getRewriteMinLength()));
+                query -> longEnough(query.text(), properties)));
+    }
+
+    private static boolean longEnough(String text, RagProperties properties) {
+        return text != null && text.length() > properties.getRetrieval().getRewriteMinLength();
     }
 
     private static boolean containsLatinLetter(String text) {

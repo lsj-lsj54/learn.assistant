@@ -30,6 +30,8 @@ public class PdfDocumentSource implements DocumentSource {
 
     private static final String PDF_LOCATION = "classpath:pdf/**/*.pdf";
 
+    public static final String SOURCE_FILE = "source_file";
+
     private final ProjectPaths projectPaths;
 
     public PdfDocumentSource() {
@@ -44,12 +46,16 @@ public class PdfDocumentSource implements DocumentSource {
     @Override
     public List<Document> read() {
         List<Document> documents = new ArrayList<>();
-        for (Resource resource : collect().values()) {
+        for (Map.Entry<String, Resource> entry : collect().entrySet()) {
             try {
-                documents.addAll(new PagePdfDocumentReader(resource).read());
+                List<Document> pages = new PagePdfDocumentReader(entry.getValue()).read();
+                for (Document page : pages) {
+                    page.getMetadata().put(SOURCE_FILE, entry.getKey());
+                }
+                documents.addAll(pages);
             }
             catch (RuntimeException exception) {
-                log.warn("读取 PDF 失败: {}", resource, exception);
+                log.warn("读取 PDF 失败: {}", entry.getValue(), exception);
             }
         }
         return documents;

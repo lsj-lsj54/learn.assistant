@@ -1,4 +1,6 @@
 package com.learn.assistant.domain.vo;
 
-public record ChatResponse(String reply) {
+import java.util.List;
+
+public record ChatResponse(String reply, List<ChatSource> sources) {
 }

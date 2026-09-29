@@ -217,6 +217,13 @@ body {
     align-self: stretch;
 }
 
+.sources {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
 .message.pending {
     color: var(--muted);
 }
@@ -225,12 +232,36 @@ body {
     width: min(768px, calc(100% - 32px));
     margin: 0 auto 8px;
     display: flex;
-    align-items: flex-end;
+    flex-direction: column;
     gap: 8px;
     padding: 10px 12px;
     border: 1px solid #3a3a3a;
     border-radius: 24px;
     background: #000;
+}
+
+.composer-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.modes {
+    display: flex;
+    gap: 8px;
+}
+
+.mode {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.mode.active {
+    color: var(--accent);
 }
 
 textarea {

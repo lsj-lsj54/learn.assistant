@@ -33,9 +33,6 @@ spring:
         model: deepseek-v4-flash
         thinking:
           type: disabled
-    mcp:
-      client:
-        enabled: false
     chat:
       memory:
         repository:
@@ -80,11 +77,3 @@ springdoc:
 
 knife4j:
   enable: true
-
-mybatis-plus:
-  mapper-locations: classpath:/mapper/**/*.xml
-  configuration:
-    map-underscore-to-camel-case: true
-  global-config:
-    db-config:
-      id-type: auto

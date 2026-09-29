@@ -1,5 +1,8 @@
 package com.learn.assistant.controller;
 
+import com.learn.assistant.chat.ChatMode;
+import com.learn.assistant.chat.ChatPiece;
+import com.learn.assistant.service.ChatAnswer;
 import com.learn.assistant.service.ChatService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,9 +18,12 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import reactor.core.publisher.Flux;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -44,7 +50,8 @@ class ChatControllerTest {
 
     @Test
     void keepsTheBlockingReply() throws Exception {
-        when(chatService.reply("你好", "c1")).thenReturn("完整回答");
+        when(chatService.reply(eq("你好"), eq("c1"), nullable(ChatMode.class)))
+                .thenReturn(new ChatAnswer("完整回答", List.of()));
 
         mockMvc.perform(post("/api/chat")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -55,7 +62,8 @@ class ChatControllerTest {
 
     @Test
     void streamsEachToken() throws Exception {
-        when(chatService.stream("你好", "c1")).thenReturn(Flux.just("你", "", "好"));
+        when(chatService.stream(eq("你好"), eq("c1"), nullable(ChatMode.class)))
+                .thenReturn(Flux.just(ChatPiece.delta("你"), ChatPiece.delta(""), ChatPiece.delta("好")));
 
         var started = mockMvc.perform(post("/api/chat/stream")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -77,7 +85,8 @@ class ChatControllerTest {
 
     @Test
     void sendsAnErrorEventWhenStreamingFails() throws Exception {
-        when(chatService.stream("你好", "c1")).thenReturn(Flux.error(new IllegalStateException("模型不可用")));
+        when(chatService.stream(eq("你好"), eq("c1"), nullable(ChatMode.class)))
+                .thenReturn(Flux.error(new IllegalStateException("模型不可用")));
 
         var started = mockMvc.perform(post("/api/chat/stream")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -11,6 +11,7 @@ import org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStorePr
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -140,6 +141,25 @@ class DocumentIngestServiceTest {
         assertEquals(1, result.skipped());
         verify(vectorStore).add(org.mockito.ArgumentMatchers.argThat(chunks -> chunks.size() == 1
                 && "这次是新的。".equals(chunks.get(0).getText())));
+    }
+
+    @Test
+    void replacesOlderChunksFromTheSameFile() {
+        DocumentSource source = mock(DocumentSource.class);
+        VectorStore vectorStore = mock(VectorStore.class);
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        when(source.read()).thenReturn(List.of(new Document("同一段资料。",
+                Map.of(PdfDocumentSource.SOURCE_FILE, "课程/笔记.pdf"))));
+        when(jdbcTemplate.update(org.mockito.ArgumentMatchers.contains("source_file"),
+                org.mockito.ArgumentMatchers.eq("课程/笔记.pdf"))).thenReturn(2);
+        DocumentIngestService service = new DocumentIngestService(List.of(source), wideSplitter(), vectorStore,
+                jdbcTemplate, new PgVectorStoreProperties(), contents -> Set.of());
+
+        IngestResult result = service.ingest();
+
+        assertEquals(1, result.added());
+        verify(jdbcTemplate).update(org.mockito.ArgumentMatchers.contains("source_file"),
+                org.mockito.ArgumentMatchers.eq("课程/笔记.pdf"));
     }
 
     private static DocumentIngestService service(List<DocumentSource> sources, VectorStore vectorStore,

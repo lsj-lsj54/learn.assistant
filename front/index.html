@@ -31,8 +31,14 @@
             <div class="messages" id="messages" hidden></div>
         </section>
         <form class="composer" id="composer">
-            <textarea id="input" rows="1" placeholder="给学习助手发送消息"></textarea>
-            <button class="send" id="send" type="submit" aria-label="发送">↑</button>
+            <div class="modes">
+                <button class="mode active" id="modeStudy" type="button">查资料</button>
+                <button class="mode" id="modeTask" type="button">办事情</button>
+            </div>
+            <div class="composer-row">
+                <textarea id="input" rows="1" placeholder="给学习助手发送消息"></textarea>
+                <button class="send" id="send" type="submit" aria-label="发送">↑</button>
+            </div>
         </form>
         <p class="hint" id="hint"></p>
     </main>

@@ -1,7 +1,11 @@
 package com.learn.assistant.controller;
 
+import com.learn.assistant.chat.ChatMode;
+import com.learn.assistant.chat.ChatPiece;
+import com.learn.assistant.chat.ChatSources;
 import com.learn.assistant.domain.dto.ChatRequest;
 import com.learn.assistant.domain.vo.ChatResponse;
+import com.learn.assistant.service.ChatAnswer;
 import com.learn.assistant.service.ChatService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -31,14 +35,17 @@ public class ChatController {
 
     @PostMapping
     public ChatResponse chat(@Valid @RequestBody ChatRequest request) {
-        return new ChatResponse(chatService.reply(request.message(), request.conversationId()));
+        ChatMode mode = ChatMode.from(request.mode());
+        ChatAnswer answer = chatService.reply(request.message(), request.conversationId(), mode);
+        return new ChatResponse(answer.reply(), answer.sources());
     }
 
     @PostMapping(path = "/stream", produces = EVENT_STREAM)
     public Flux<ServerSentEvent<String>> stream(@Valid @RequestBody ChatRequest request) {
-        return chatService.stream(request.message(), request.conversationId())
-                .filter(token -> token != null && !token.isEmpty())
-                .map(token -> ServerSentEvent.builder(token).build())
+        ChatMode mode = ChatMode.from(request.mode());
+        return chatService.stream(request.message(), request.conversationId(), mode)
+                .filter(piece -> piece.kind() != ChatPiece.Kind.DELTA || hasText(piece.text()))
+                .map(ChatController::event)
                 .onErrorResume(error -> {
                     log.warn("流式回答失败", error);
                     String message = error.getMessage();
@@ -47,6 +54,20 @@ public class ChatController {
                             .data(message == null || message.isBlank() ? "请求失败" : message)
                             .build());
                 });
+    }
+
+    private static ServerSentEvent<String> event(ChatPiece piece) {
+        if (piece.kind() == ChatPiece.Kind.STATUS) {
+            return ServerSentEvent.<String>builder().event("status").data(piece.text()).build();
+        }
+        if (piece.kind() == ChatPiece.Kind.SOURCE && piece.source() != null) {
+            return ServerSentEvent.<String>builder().event("source").data(ChatSources.wire(piece.source())).build();
+        }
+        return ServerSentEvent.builder(piece.text()).build();
+    }
+
+    private static boolean hasText(String text) {
+        return text != null && !text.isEmpty();
     }
 
     @DeleteMapping("/{conversationId}")

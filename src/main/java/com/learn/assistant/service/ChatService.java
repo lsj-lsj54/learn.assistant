@@ -1,5 +1,7 @@
 package com.learn.assistant.service;
 
+import com.learn.assistant.chat.ChatMode;
+import com.learn.assistant.chat.ChatPiece;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -16,12 +18,12 @@ public class ChatService {
         this.chatMemory = chatMemory;
     }
 
-    public String reply(String message, String conversationId) {
-        return conversationClient.chat(message, conversationId);
+    public ChatAnswer reply(String message, String conversationId, ChatMode mode) {
+        return conversationClient.chat(message, conversationId, mode);
     }
 
-    public Flux<String> stream(String message, String conversationId) {
-        return conversationClient.stream(message, conversationId);
+    public Flux<ChatPiece> stream(String message, String conversationId, ChatMode mode) {
+        return conversationClient.stream(message, conversationId, mode);
     }
 
     public void clear(String conversationId) {

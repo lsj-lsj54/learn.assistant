@@ -9,7 +9,6 @@ import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
-import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -37,16 +36,10 @@ public class ChatConfig {
     }
 
     @Bean
-    public ChatClient chatClient(ChatClient.Builder builder, MessageChatMemoryAdvisor messageChatMemoryAdvisor,
-            RetrievalAugmentationAdvisor retrievalAugmentationAdvisor, AssistantToolCatalog assistantToolCatalog,
+    public ChatClient chatClient(ChatClient.Builder builder, AssistantToolCatalog assistantToolCatalog,
             ChatProperties chatProperties) {
         chatProperties.validate();
-        Object[] tools = assistantToolCatalog.toArray();
-        log.info("已注册 {} 个工具", tools.length);
-        return builder
-                .defaultSystem(chatProperties.systemPromptOrDefault())
-                .defaultAdvisors(messageChatMemoryAdvisor, retrievalAugmentationAdvisor)
-                .defaultTools(tools)
-                .build();
+        log.info("已注册 {} 个工具", assistantToolCatalog.toArray().length);
+        return builder.build();
     }
 }

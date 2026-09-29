@@ -1,10 +1,12 @@
 package com.learn.assistant.service;
 
+import com.learn.assistant.chat.ChatMode;
+import com.learn.assistant.chat.ChatPiece;
 import reactor.core.publisher.Flux;
 
 public interface ConversationClient {
 
-    String chat(String message, String conversationId);
+    ChatAnswer chat(String message, String conversationId, ChatMode mode);
 
-    Flux<String> stream(String message, String conversationId);
+    Flux<ChatPiece> stream(String message, String conversationId, ChatMode mode);
 }

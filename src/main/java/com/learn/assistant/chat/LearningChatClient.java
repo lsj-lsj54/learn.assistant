@@ -1,35 +1,117 @@
 package com.learn.assistant.chat;
 
+import com.learn.assistant.prompts.ChatPrompts;
+import com.learn.assistant.properties.ChatProperties;
+import com.learn.assistant.service.ChatAnswer;
 import com.learn.assistant.service.ConversationClient;
+import com.learn.assistant.tool.AssistantToolCatalog;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 public class LearningChatClient implements ConversationClient {
 
     private final ChatClient chatClient;
 
-    public LearningChatClient(ChatClient chatClient) {
+    private final MessageChatMemoryAdvisor messageChatMemoryAdvisor;
+
+    private final RetrievalAugmentationAdvisor retrievalAugmentationAdvisor;
+
+    private final AssistantToolCatalog assistantToolCatalog;
+
+    private final ChatProperties chatProperties;
+
+    public LearningChatClient(ChatClient chatClient, MessageChatMemoryAdvisor messageChatMemoryAdvisor,
+            RetrievalAugmentationAdvisor retrievalAugmentationAdvisor, AssistantToolCatalog assistantToolCatalog,
+            ChatProperties chatProperties) {
         this.chatClient = chatClient;
+        this.messageChatMemoryAdvisor = messageChatMemoryAdvisor;
+        this.retrievalAugmentationAdvisor = retrievalAugmentationAdvisor;
+        this.assistantToolCatalog = assistantToolCatalog;
+        this.chatProperties = chatProperties;
     }
 
     @Override
-    public String chat(String message, String conversationId) {
-        return chatClient.prompt()
-                .user(message)
-                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, conversationId))
-                .call()
-                .content();
+    public ChatAnswer chat(String message, String conversationId, ChatMode mode) {
+        ChatClientResponse response = prompt(message, conversationId, mode).call().chatClientResponse();
+        return new ChatAnswer(text(response), ChatSources.from(response));
     }
 
     @Override
-    public Flux<String> stream(String message, String conversationId) {
-        return chatClient.prompt()
-                .user(message)
-                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, conversationId))
+    public Flux<ChatPiece> stream(String message, String conversationId, ChatMode mode) {
+        AtomicBoolean sourcesSent = new AtomicBoolean();
+        AtomicBoolean generating = new AtomicBoolean();
+        Flux<ChatPiece> answer = prompt(message, conversationId, mode)
                 .stream()
-                .content();
+                .chatClientResponse()
+                .concatMap(response -> Flux.fromIterable(pieces(response, sourcesSent, generating)));
+        return Flux.concat(Flux.just(ChatPiece.status(mode.waitingStatus())), answer);
+    }
+
+    private ChatClient.ChatClientRequestSpec prompt(String message, String conversationId, ChatMode mode) {
+        ChatClient.ChatClientRequestSpec spec = chatClient.prompt()
+                .system(mode == ChatMode.TASK ? chatProperties.systemPromptOrDefault() : ChatPrompts.STUDY)
+                .user(message)
+                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, conversationId))
+                .advisors(messageChatMemoryAdvisor);
+        if (mode == ChatMode.STUDY) {
+            return spec.advisors(retrievalAugmentationAdvisor);
+        }
+        return spec.tools(assistantToolCatalog.toArray());
+    }
+
+    private static List<ChatPiece> pieces(ChatClientResponse response, AtomicBoolean sourcesSent,
+            AtomicBoolean generating) {
+        List<ChatPiece> pieces = new ArrayList<>();
+        if (sourcesSent.compareAndSet(false, true)) {
+            for (var source : ChatSources.from(response)) {
+                pieces.add(ChatPiece.source(source));
+            }
+        }
+        AssistantMessage output = output(response);
+        if (output == null) {
+            return pieces;
+        }
+        if (output.hasToolCalls()) {
+            pieces.add(ChatPiece.status("正在调用工具"));
+        }
+        String text = output.getText();
+        if (text != null && !text.isEmpty()) {
+            if (generating.compareAndSet(false, true)) {
+                pieces.add(ChatPiece.status("正在生成"));
+            }
+            pieces.add(ChatPiece.delta(text));
+        }
+        return pieces;
+    }
+
+    private static String text(ChatClientResponse response) {
+        AssistantMessage output = output(response);
+        if (output == null || output.getText() == null) {
+            return "";
+        }
+        return output.getText();
+    }
+
+    private static AssistantMessage output(ChatClientResponse response) {
+        if (response == null) {
+            return null;
+        }
+        ChatResponse chatResponse = response.chatResponse();
+        if (chatResponse == null || chatResponse.getResult() == null) {
+            return null;
+        }
+        return chatResponse.getResult().getOutput();
     }
 }
