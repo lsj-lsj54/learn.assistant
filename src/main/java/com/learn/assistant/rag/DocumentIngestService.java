@@ -1,6 +1,7 @@
 package com.learn.assistant.rag;
 
 import com.learn.assistant.service.DocumentIngestor;
+import com.learn.assistant.service.IngestResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -11,7 +12,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class DocumentIngestService implements DocumentIngestor {
@@ -28,22 +31,25 @@ public class DocumentIngestService implements DocumentIngestor {
 
     private final PgVectorStoreProperties vectorStoreProperties;
 
+    private final StoredChunkLookup storedChunkLookup;
+
     private final Object storeLock = new Object();
 
     public DocumentIngestService(List<DocumentSource> documentSources, TokenTextSplitter tokenTextSplitter,
-            VectorStore vectorStore, JdbcTemplate jdbcTemplate, PgVectorStoreProperties vectorStoreProperties) {
+            VectorStore vectorStore, JdbcTemplate jdbcTemplate, PgVectorStoreProperties vectorStoreProperties,
+            StoredChunkLookup storedChunkLookup) {
         this.documentSources = List.copyOf(documentSources);
         this.tokenTextSplitter = tokenTextSplitter;
         this.vectorStore = vectorStore;
         this.jdbcTemplate = jdbcTemplate;
         this.vectorStoreProperties = vectorStoreProperties;
+        this.storedChunkLookup = storedChunkLookup;
     }
 
     @Override
     public int clear() {
         synchronized (storeLock) {
-            String sql = "DELETE FROM " + identifier(vectorStoreProperties.getSchemaName()) + "."
-                    + identifier(vectorStoreProperties.getTableName());
+            String sql = "DELETE FROM " + VectorTables.qualified(vectorStoreProperties);
             int deleted = jdbcTemplate.update(sql);
             log.info("已清空向量 {} 条", deleted);
             return deleted;
@@ -51,18 +57,62 @@ public class DocumentIngestService implements DocumentIngestor {
     }
 
     @Override
-    public int ingest() {
+    public IngestResult ingest() {
         synchronized (storeLock) {
+            int removed = collapseDuplicates();
+            if (removed > 0) {
+                log.info("已删掉库里重复的 {} 条", removed);
+            }
             List<Document> documents = readAll();
             if (documents.isEmpty()) {
                 log.info("没有可导入的文档");
-                return 0;
+                return new IngestResult(0, 0);
             }
             List<Document> chunks = tokenTextSplitter.apply(documents);
-            vectorStore.add(chunks);
-            log.info("已导入 {} 段", chunks.size());
-            return chunks.size();
+            IngestResult result = storeNewChunks(chunks);
+            log.info("已导入 {} 段，跳过 {} 段重复", result.added(), result.skipped());
+            return result;
         }
+    }
+
+    private IngestResult storeNewChunks(List<Document> chunks) {
+        List<String> texts = new ArrayList<>();
+        for (Document chunk : chunks) {
+            if (chunk.getText() != null && !chunk.getText().isBlank()) {
+                texts.add(chunk.getText());
+            }
+        }
+        Set<String> seen = new HashSet<>();
+        for (String text : storedChunkLookup.findPresent(texts)) {
+            if (text != null) {
+                seen.add(ChunkFingerprint.hash(text));
+            }
+        }
+        List<Document> fresh = new ArrayList<>();
+        int skipped = 0;
+        for (Document chunk : chunks) {
+            String text = chunk.getText();
+            if (text == null || text.isBlank()) {
+                skipped++;
+                continue;
+            }
+            if (!seen.add(ChunkFingerprint.hash(text))) {
+                skipped++;
+                continue;
+            }
+            fresh.add(ChunkFingerprint.stamp(chunk));
+        }
+        if (!fresh.isEmpty()) {
+            vectorStore.add(fresh);
+        }
+        return new IngestResult(fresh.size(), skipped);
+    }
+
+    private int collapseDuplicates() {
+        String table = VectorTables.qualified(vectorStoreProperties);
+        String sql = "DELETE FROM " + table + " AS extra USING " + table + " AS kept "
+                + "WHERE extra.content = kept.content AND extra.ctid > kept.ctid";
+        return jdbcTemplate.update(sql);
     }
 
     private List<Document> readAll() {
@@ -75,13 +125,6 @@ public class DocumentIngestService implements DocumentIngestor {
             documents.addAll(batch);
         }
         return documents;
-    }
-
-    private static String identifier(String name) {
-        if (name == null || !name.matches("[A-Za-z_][A-Za-z0-9_]*")) {
-            throw new IllegalArgumentException("向量表名不合法");
-        }
-        return name;
     }
 
     private static List<Document> read(DocumentSource source) {

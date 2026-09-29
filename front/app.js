@@ -165,7 +165,17 @@ async function importPdf() {
         if (!response.ok) {
             throw new Error(body.message || body.error || "导入失败");
         }
-        setHint("已导入，切成 " + (body.chunkCount ?? 0) + " 段");
+        const added = body.addedCount ?? 0;
+        const skipped = body.skippedCount ?? 0;
+        if (added === 0 && skipped === 0) {
+            setHint("没有可导入的文档");
+        } else if (added === 0) {
+            setHint("没有新片段，跳过 " + skipped + " 段重复");
+        } else if (skipped === 0) {
+            setHint("已导入 " + added + " 段");
+        } else {
+            setHint("已导入 " + added + " 段，跳过 " + skipped + " 段重复");
+        }
     } catch (error) {
         setHint(error.message || "无法连接后端", true);
     }
