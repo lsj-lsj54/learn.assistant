@@ -48,12 +48,29 @@ public class ChatController {
                 .map(ChatController::event)
                 .onErrorResume(error -> {
                     log.warn("流式回答失败", error);
-                    String message = error.getMessage();
                     return Flux.just(ServerSentEvent.<String>builder()
                             .event("error")
-                            .data(message == null || message.isBlank() ? "请求失败" : message)
+                            .data(readable(error))
                             .build());
                 });
+    }
+
+    private static String readable(Throwable error) {
+        String message = "";
+        Throwable current = error;
+        while (current != null) {
+            if (current.getMessage() != null) {
+                message = message + " " + current.getMessage();
+            }
+            current = current.getCause();
+        }
+        if (message.contains("Failed to resolve") || message.contains("api.deepseek.com")) {
+            return "连不上 DeepSeek：无法解析 api.deepseek.com。请检查网络或 DNS 后重试";
+        }
+        if (error.getMessage() == null || error.getMessage().isBlank()) {
+            return "请求失败";
+        }
+        return error.getMessage();
     }
 
     private static ServerSentEvent<String> event(ChatPiece piece) {
