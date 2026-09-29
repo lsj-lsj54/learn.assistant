@@ -46,7 +46,7 @@ learn:
     pdf-dir: src/main/resources/pdf
     download-dir: res
   tools:
-    pdf-font: C:/Windows/Fonts/simhei.ttf
+    pdf-font: ${LEARN_TOOLS_PDF_FONT:}
     bocha-api-key: ${BOCHA_API_KEY:}
     scrape-max-chars: ${LEARN_TOOLS_SCRAPE_MAX_CHARS:8000}
     read-max-chars: ${LEARN_TOOLS_READ_MAX_CHARS:100000}

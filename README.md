@@ -28,6 +28,8 @@ mvn spring-boot:run
 
 4. 打开 http://localhost:8080 。
 
+写 PDF 时会自动寻找系统里的中文字体。也可以在 `.env` 里指定 `LEARN_TOOLS_PDF_FONT`，指向一个 `.ttf`、`.otf` 或 `.ttc` 文件。
+
 查资料会检索 PDF，不调用下载和文件工具。办事情会调用工具，不强制检索。输入框上方可以切换。
 
 接口说明在 http://localhost:8080/doc.html 。

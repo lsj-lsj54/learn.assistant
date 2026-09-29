@@ -32,11 +32,11 @@ public class PdfWriteTool {
 
     private final ProjectPaths projectPaths;
 
-    private final Path chineseFont;
+    private final String configuredFont;
 
     public PdfWriteTool(ProjectPaths projectPaths, ToolProperties toolProperties) {
         this.projectPaths = projectPaths;
-        this.chineseFont = Path.of(toolProperties.getPdfFont());
+        this.configuredFont = toolProperties.getPdfFont() == null ? "" : toolProperties.getPdfFont().trim();
     }
 
     @Tool(description = ToolPrompts.WRITE_PDF)
@@ -64,7 +64,7 @@ public class PdfWriteTool {
 
     private void write(Path target, String content) throws IOException {
         try (PDDocument document = new PDDocument()) {
-            PDFont font = PDType0Font.load(document, chineseFont.toFile());
+            PDFont font = loadFont(document);
             float width = PDRectangle.A4.getWidth() - MARGIN * 2;
             List<String> lines = wrap(content, font, width);
             PDPage page = newPage(document);
@@ -99,6 +99,49 @@ public class PdfWriteTool {
                 }
             }
             document.save(target.toFile());
+        }
+    }
+
+    private PDFont loadFont(PDDocument document) throws IOException {
+        Path fontFile = resolveFont();
+        if (fontFile.getFileName().toString().toLowerCase().endsWith(".ttc")) {
+            try (var input = Files.newInputStream(fontFile)) {
+                return PDType0Font.load(document, input, true);
+            }
+        }
+        return PDType0Font.load(document, fontFile.toFile());
+    }
+
+    private Path resolveFont() throws IOException {
+        if (!configuredFont.isBlank()) {
+            Path configured = Path.of(configuredFont);
+            if (!Files.isRegularFile(configured)) {
+                throw new IOException("找不到配置的字体: " + configured);
+            }
+            return configured;
+        }
+        for (Path candidate : fontCandidates()) {
+            if (Files.isRegularFile(candidate)) {
+                return candidate;
+            }
+        }
+        throw new IOException("没有找到可用的中文字体。请设置 learn.tools.pdf-font，指向一个 .ttf、.otf 或 .ttc 文件");
+    }
+
+    private static List<Path> fontCandidates() {
+        List<Path> candidates = new ArrayList<>();
+        addNamed(candidates, Path.of("C:/Windows/Fonts"), "simhei.ttf", "msyh.ttf", "msyh.ttc", "simsun.ttc");
+        addNamed(candidates, Path.of("/usr/share/fonts/truetype/wqy"), "wqy-microhei.ttc", "wqy-zenhei.ttc");
+        addNamed(candidates, Path.of("/usr/share/fonts/opentype/noto"), "NotoSansCJK-Regular.ttc", "NotoSansCJKsc-Regular.otf");
+        addNamed(candidates, Path.of("/usr/share/fonts/truetype/noto"), "NotoSansCJK-Regular.ttc");
+        addNamed(candidates, Path.of("/System/Library/Fonts"), "PingFang.ttc", "STHeiti Light.ttc");
+        addNamed(candidates, Path.of("/Library/Fonts"), "Arial Unicode.ttf");
+        return candidates;
+    }
+
+    private static void addNamed(List<Path> candidates, Path directory, String... names) {
+        for (String name : names) {
+            candidates.add(directory.resolve(name));
         }
     }
 

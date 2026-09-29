@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "learn.tools")
 public class ToolProperties {
 
-    private String pdfFont = "C:/Windows/Fonts/simhei.ttf";
+    private String pdfFont = "";
 
     private String bochaApiKey = "";
 

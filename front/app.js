@@ -79,7 +79,7 @@ function render() {
             item.className = "message " + message.role + (message.pending ? " pending" : "");
             const text = document.createElement("div");
             text.className = "message-text";
-            text.textContent = message.content;
+            fillMessageText(text, message);
             item.append(text);
             appendSources(item, message.sources);
             messagesEl.appendChild(item);
@@ -305,10 +305,84 @@ function paintAssistant(chat, message) {
         text.className = "message-text";
         node.append(text);
     }
-    text.textContent = message.content;
+    text.textContent = "";
+    fillMessageText(text, message);
     node.classList.toggle("pending", Boolean(message.pending));
     appendSources(node, message.sources);
     scrollToLatest();
+}
+
+function fillMessageText(node, message) {
+    if (message.role === "assistant" && !message.pending) {
+        node.innerHTML = renderMarkdown(message.content || "");
+        return;
+    }
+    node.textContent = message.content || "";
+}
+
+function renderMarkdown(source) {
+    const escaped = escapeHtml(source);
+    const blocks = [];
+    const withCode = escaped.replace(/```([\s\S]*?)```/g, (_, code) => {
+        const token = "\u0000CODE" + blocks.length + "\u0000";
+        blocks.push("<pre><code>" + code.replace(/^\n/, "").replace(/\n$/, "") + "</code></pre>");
+        return token;
+    });
+    let html = withCode.replace(/`([^`]+)`/g, "<code>$1</code>");
+    html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/(^|[\s])\*([^*\n]+)\*(?=[\s]|$)/g, "$1<em>$2</em>");
+    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    const lines = html.split("\n");
+    const out = [];
+    let list = null;
+    const flushList = () => {
+        if (!list) {
+            return;
+        }
+        out.push("<" + list.type + ">" + list.items.join("") + "</" + list.type + ">");
+        list = null;
+    };
+    for (const line of lines) {
+        const code = /^\u0000CODE(\d+)\u0000$/.exec(line);
+        if (code) {
+            flushList();
+            out.push(blocks[Number(code[1])]);
+            continue;
+        }
+        const heading = /^(#{1,3}) (.+)$/.exec(line);
+        if (heading) {
+            flushList();
+            const level = heading[1].length;
+            out.push("<h" + level + ">" + heading[2] + "</h" + level + ">");
+            continue;
+        }
+        const unordered = /^[-*] (.+)$/.exec(line);
+        const ordered = /^\d+\. (.+)$/.exec(line);
+        if (unordered || ordered) {
+            const type = unordered ? "ul" : "ol";
+            if (!list || list.type !== type) {
+                flushList();
+                list = { type, items: [] };
+            }
+            list.items.push("<li>" + (unordered ? unordered[1] : ordered[1]) + "</li>");
+            continue;
+        }
+        flushList();
+        if (line.trim() === "") {
+            continue;
+        }
+        out.push("<p>" + line + "</p>");
+    }
+    flushList();
+    return out.join("");
+}
+
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
 }
 
 function appendSources(node, sources) {

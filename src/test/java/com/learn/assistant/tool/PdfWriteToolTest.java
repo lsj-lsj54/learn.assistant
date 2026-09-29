@@ -48,6 +48,17 @@ class PdfWriteToolTest {
         assertTrue(tool.writePdf("  ", "正文").startsWith("写入 PDF 失败"));
     }
 
+    @Test
+    void writePdfReportsMissingConfiguredFont() {
+        ToolProperties properties = new ToolProperties();
+        properties.setPdfFont(tempDir.resolve("missing.ttf").toString());
+        PdfWriteTool tool = new PdfWriteTool(new TempProjectPaths(tempDir), properties);
+
+        String result = tool.writePdf("note", "正文");
+
+        assertTrue(result.contains("找不到配置的字体"));
+    }
+
     private static final class TempProjectPaths extends ProjectPaths {
 
         private final Path root;
