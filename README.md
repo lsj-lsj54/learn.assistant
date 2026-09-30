@@ -1,5 +1,7 @@
 # 学习助手
 
+https://github.com/lsj-lsj54/learn.assistant/raw/master/docs/demo.mp4
+
 本地学习助手。DeepSeek 负责对话，Ollama 的 `bge-m3` 把 PDF 做成向量，PostgreSQL 的 pgvector 保存资料和对话记忆。页面在 `front/`，由应用直接提供。
 
 这是给一个人在本机用的。接口没有登录，CORS 允许任意来源。不要把 8080 暴露到公网。
