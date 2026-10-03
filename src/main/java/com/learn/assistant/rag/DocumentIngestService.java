@@ -1,5 +1,7 @@
 package com.learn.assistant.rag;
 
+import com.learn.assistant.rag.etl.l.LoadRouter;
+import com.learn.assistant.rag.etl.l.VectorStoreLoad;
 import com.learn.assistant.rag.etl.t.TokenChunkTransform;
 import com.learn.assistant.rag.etl.t.TransformRouter;
 import com.learn.assistant.service.DocumentIngestor;
@@ -38,7 +40,7 @@ public class DocumentIngestService implements DocumentIngestor {
 
   private final TransformRouter transformRouter;
 
-  private final VectorStore vectorStore;
+  private final LoadRouter loadRouter;
 
   private final JdbcTemplate jdbcTemplate;
 
@@ -60,7 +62,7 @@ public class DocumentIngestService implements DocumentIngestor {
       PdfDocumentSource pdfDocumentSource) {
     this.documentSources = List.copyOf(documentSources);
     this.transformRouter = new TransformRouter(new TokenChunkTransform(tokenTextSplitter));
-    this.vectorStore = vectorStore;
+    this.loadRouter = new LoadRouter(new VectorStoreLoad(vectorStore));
     this.jdbcTemplate = jdbcTemplate;
     this.vectorStoreProperties = vectorStoreProperties;
     this.storedChunkLookup = storedChunkLookup;
@@ -237,7 +239,7 @@ public class DocumentIngestService implements DocumentIngestor {
       fresh.add(ChunkFingerprint.stamp(chunk));
     }
     if (!fresh.isEmpty()) {
-      vectorStore.add(fresh);
+      loadRouter.accept(fresh);
     }
     return new IngestResult(fresh.size(), skipped, List.of());
   }
