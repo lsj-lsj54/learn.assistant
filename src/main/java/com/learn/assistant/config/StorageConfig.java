@@ -2,7 +2,7 @@ package com.learn.assistant.config;
 
 import com.learn.assistant.properties.PathProperties;
 import com.learn.assistant.properties.ToolProperties;
-import com.learn.assistant.tool.ProjectPaths;
+import com.learn.assistant.tool.path.ProjectPaths;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

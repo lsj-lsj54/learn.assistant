@@ -4,7 +4,7 @@ import com.learn.assistant.chat.ChatMode;
 import com.learn.assistant.chat.ChatPiece;
 import com.learn.assistant.service.ChatAnswer;
 import com.learn.assistant.service.ChatService;
-import com.learn.assistant.tool.ToolStep;
+import com.learn.assistant.tool.activity.ToolStep;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

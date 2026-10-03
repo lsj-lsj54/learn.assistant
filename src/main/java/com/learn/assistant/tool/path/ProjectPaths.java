@@ -1,4 +1,4 @@
-package com.learn.assistant.tool;
+package com.learn.assistant.tool.path;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package com.learn.assistant.tool;
+package com.learn.assistant.tool.activity;
 
 public record ToolStep(String name, String arguments, String result) {
 

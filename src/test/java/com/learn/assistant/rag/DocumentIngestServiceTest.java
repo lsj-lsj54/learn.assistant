@@ -14,7 +14,7 @@ import com.learn.assistant.service.FileIngest;
 import com.learn.assistant.service.IngestResult;
 import com.learn.assistant.service.LibraryFile;
 import com.learn.assistant.service.LibraryRemoval;
-import com.learn.assistant.tool.ProjectPaths;
+import com.learn.assistant.tool.path.ProjectPaths;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;

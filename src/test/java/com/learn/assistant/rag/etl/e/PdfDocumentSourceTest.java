@@ -1,6 +1,6 @@
 package com.learn.assistant.rag.etl.e;
 
-import com.learn.assistant.tool.ProjectPaths;
+import com.learn.assistant.tool.path.ProjectPaths;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;

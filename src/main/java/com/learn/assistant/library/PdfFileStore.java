@@ -1,6 +1,6 @@
 package com.learn.assistant.library;
 
-import com.learn.assistant.tool.ProjectPaths;
+import com.learn.assistant.tool.path.ProjectPaths;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;

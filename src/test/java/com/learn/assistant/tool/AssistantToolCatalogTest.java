@@ -1,6 +1,11 @@
 package com.learn.assistant.tool;
 
 import com.learn.assistant.properties.ToolProperties;
+import com.learn.assistant.tool.concretetool.PdfWriteTool;
+import com.learn.assistant.tool.concretetool.WebSearchTool;
+import com.learn.assistant.tool.config.AssistantTool;
+import com.learn.assistant.tool.config.AssistantToolCatalog;
+import com.learn.assistant.tool.path.ProjectPaths;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 

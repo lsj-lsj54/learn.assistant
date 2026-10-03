@@ -1,6 +1,10 @@
-package com.learn.assistant.tool;
+package com.learn.assistant.tool.concretetool;
 
 import com.learn.assistant.prompts.ToolPrompts;
+import com.learn.assistant.tool.config.AssistantTool;
+import com.learn.assistant.tool.http.PublicHttp;
+import com.learn.assistant.tool.log.ToolCallLog;
+import com.learn.assistant.tool.path.ProjectPaths;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.core.annotation.Order;

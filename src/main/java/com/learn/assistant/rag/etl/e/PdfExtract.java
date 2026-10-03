@@ -1,6 +1,6 @@
 package com.learn.assistant.rag.etl.e;
 
-import com.learn.assistant.tool.ProjectPaths;
+import com.learn.assistant.tool.path.ProjectPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;

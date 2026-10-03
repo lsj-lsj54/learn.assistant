@@ -1,6 +1,9 @@
-package com.learn.assistant.tool;
+package com.learn.assistant.tool.concretetool;
 
 import com.learn.assistant.prompts.ToolPrompts;
+import com.learn.assistant.tool.config.AssistantTool;
+import com.learn.assistant.tool.log.ToolCallLog;
+import com.learn.assistant.tool.path.ProjectPaths;
 import com.learn.assistant.properties.ToolProperties;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;

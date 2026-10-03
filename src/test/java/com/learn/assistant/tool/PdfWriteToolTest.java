@@ -1,6 +1,8 @@
 package com.learn.assistant.tool;
 
 import com.learn.assistant.properties.ToolProperties;
+import com.learn.assistant.tool.concretetool.PdfWriteTool;
+import com.learn.assistant.tool.path.ProjectPaths;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;

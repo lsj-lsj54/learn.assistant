@@ -1,7 +1,7 @@
 package com.learn.assistant.config;
 
 import com.learn.assistant.properties.ChatProperties;
-import com.learn.assistant.tool.AssistantToolCatalog;
+import com.learn.assistant.tool.config.AssistantToolCatalog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;

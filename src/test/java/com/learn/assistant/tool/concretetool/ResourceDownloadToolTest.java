@@ -1,5 +1,7 @@
-package com.learn.assistant.tool;
+package com.learn.assistant.tool.concretetool;
 
+import com.learn.assistant.tool.http.PublicHttp;
+import com.learn.assistant.tool.path.ProjectPaths;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

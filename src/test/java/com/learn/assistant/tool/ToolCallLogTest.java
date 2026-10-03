@@ -1,5 +1,8 @@
 package com.learn.assistant.tool;
 
+import com.learn.assistant.tool.activity.ToolActivity;
+import com.learn.assistant.tool.activity.ToolStep;
+import com.learn.assistant.tool.log.ToolCallLog;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

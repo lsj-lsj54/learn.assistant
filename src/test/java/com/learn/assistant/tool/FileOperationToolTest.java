@@ -1,5 +1,7 @@
 package com.learn.assistant.tool;
 
+import com.learn.assistant.tool.concretetool.FileOperationTool;
+import com.learn.assistant.tool.path.ProjectPaths;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

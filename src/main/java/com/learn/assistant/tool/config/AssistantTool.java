@@ -1,4 +1,4 @@
-package com.learn.assistant.tool;
+package com.learn.assistant.tool.config;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

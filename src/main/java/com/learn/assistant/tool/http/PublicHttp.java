@@ -1,4 +1,4 @@
-package com.learn.assistant.tool;
+package com.learn.assistant.tool.http;
 
 import org.springframework.stereotype.Component;
 

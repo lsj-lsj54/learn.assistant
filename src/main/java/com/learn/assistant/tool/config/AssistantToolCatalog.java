@@ -1,4 +1,4 @@
-package com.learn.assistant.tool;
+package com.learn.assistant.tool.config;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;

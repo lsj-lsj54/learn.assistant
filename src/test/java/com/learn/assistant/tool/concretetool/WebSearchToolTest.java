@@ -1,4 +1,4 @@
-package com.learn.assistant.tool;
+package com.learn.assistant.tool.concretetool;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learn.assistant.properties.ToolProperties;

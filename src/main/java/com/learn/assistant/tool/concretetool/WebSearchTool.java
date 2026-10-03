@@ -1,6 +1,8 @@
-package com.learn.assistant.tool;
+package com.learn.assistant.tool.concretetool;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.learn.assistant.tool.config.AssistantTool;
+import com.learn.assistant.tool.log.ToolCallLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learn.assistant.prompts.ToolPrompts;
 import com.learn.assistant.properties.ToolProperties;
