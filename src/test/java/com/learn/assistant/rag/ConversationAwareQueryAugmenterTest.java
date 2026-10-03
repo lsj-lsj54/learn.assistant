@@ -1,5 +1,6 @@
 package com.learn.assistant.rag;
 
+import com.learn.assistant.rag.advisor.postretrieval.ConversationAwareQueryAugmenter;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;

@@ -1,4 +1,4 @@
-package com.learn.assistant.rag;
+package com.learn.assistant.rag.advisor.postretrieval;
 
 import com.learn.assistant.prompts.RagPrompts;
 import org.springframework.ai.chat.prompt.PromptTemplate;
