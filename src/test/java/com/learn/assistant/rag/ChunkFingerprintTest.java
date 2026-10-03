@@ -1,5 +1,7 @@
 package com.learn.assistant.rag;
 
+import com.learn.assistant.rag.vectorstore.ChunkFingerprint;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 

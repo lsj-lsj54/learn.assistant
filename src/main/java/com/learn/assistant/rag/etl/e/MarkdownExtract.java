@@ -1,6 +1,5 @@
 package com.learn.assistant.rag.etl.e;
 
-import com.learn.assistant.rag.SourceRead;
 import com.learn.assistant.tool.ProjectPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -57,7 +57,7 @@ public final class ChatSources {
     }
 
     private static String fileName(Document document) {
-        Object source = document.getMetadata().get(com.learn.assistant.rag.PdfDocumentSource.SOURCE_FILE);
+        Object source = document.getMetadata().get(com.learn.assistant.rag.etl.e.PdfDocumentSource.SOURCE_FILE);
         if (source instanceof String file && !file.isBlank()) {
             return file;
         }

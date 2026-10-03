@@ -1,4 +1,4 @@
-package com.learn.assistant.rag;
+package com.learn.assistant.rag.vectorstore;
 
 import org.springframework.ai.document.Document;
 
@@ -13,18 +13,18 @@ import java.util.UUID;
  * 切片正文的 SHA-256。向量表主键是 uuid，所以用这段哈希生成稳定 id：
  * 同一段文字再次写入会落到同一行。
  */
-final class ChunkFingerprint {
+public final class ChunkFingerprint {
 
-    static final String METADATA_KEY = "chunkHash";
+    public static final String METADATA_KEY = "chunkHash";
 
     private ChunkFingerprint() {
     }
 
-    static String hash(String text) {
+    public static String hash(String text) {
         return hex(digest(text));
     }
 
-    static Document stamp(Document chunk) {
+    public static Document stamp(Document chunk) {
         String text = chunk.getText();
         byte[] digest = digest(text);
         Map<String, Object> metadata = new HashMap<>();

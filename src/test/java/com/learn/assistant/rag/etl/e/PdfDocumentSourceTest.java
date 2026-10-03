@@ -1,4 +1,4 @@
-package com.learn.assistant.rag;
+package com.learn.assistant.rag.etl.e;
 
 import org.junit.jupiter.api.Test;
 

@@ -1,7 +1,5 @@
-package com.learn.assistant.rag;
+package com.learn.assistant.rag.etl.e;
 
-import com.learn.assistant.rag.etl.e.ExtractRouter;
-import com.learn.assistant.rag.etl.e.PdfExtract;
 import com.learn.assistant.tool.ProjectPaths;
 import org.springframework.ai.document.Document;
 import org.springframework.beans.factory.annotation.Autowired;

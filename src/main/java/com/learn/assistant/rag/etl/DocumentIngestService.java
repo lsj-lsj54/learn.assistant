@@ -1,9 +1,13 @@
-package com.learn.assistant.rag;
+package com.learn.assistant.rag.etl;
 
+import com.learn.assistant.rag.etl.e.DocumentSource;
+import com.learn.assistant.rag.etl.e.PdfDocumentSource;
+import com.learn.assistant.rag.etl.e.SourceRead;
 import com.learn.assistant.rag.etl.l.LoadRouter;
 import com.learn.assistant.rag.etl.l.VectorStoreLoad;
 import com.learn.assistant.rag.etl.t.TokenChunkTransform;
 import com.learn.assistant.rag.etl.t.TransformRouter;
+import com.learn.assistant.rag.vectorstore.ChunkFingerprint;
 import com.learn.assistant.rag.vectorstore.PgVectorCatalog;
 import com.learn.assistant.rag.vectorstore.StoredChunkLookup;
 import com.learn.assistant.service.DocumentIngestor;

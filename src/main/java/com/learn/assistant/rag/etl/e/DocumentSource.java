@@ -1,4 +1,4 @@
-package com.learn.assistant.rag;
+package com.learn.assistant.rag.etl.e;
 
 /**
  * 可导入的文档来源。没有内容时 documents 为空。

@@ -1,6 +1,11 @@
 package com.learn.assistant.rag;
 
 import com.learn.assistant.config.RagConfig;
+import com.learn.assistant.rag.etl.DocumentIngestService;
+import com.learn.assistant.rag.etl.e.DocumentSource;
+import com.learn.assistant.rag.etl.e.PdfDocumentSource;
+import com.learn.assistant.rag.etl.e.SourceRead;
+import com.learn.assistant.rag.vectorstore.ChunkFingerprint;
 import com.learn.assistant.properties.RagProperties;
 import com.learn.assistant.service.FileIngest;
 import com.learn.assistant.service.IngestResult;
