@@ -1,11 +1,14 @@
 package com.learn.assistant.rag;
 
 import com.learn.assistant.config.RagConfig;
-import com.learn.assistant.rag.etl.DocumentIngestService;
+import com.learn.assistant.library.FileStoreRouter;
+import com.learn.assistant.library.PdfFileStore;
 import com.learn.assistant.rag.etl.e.DocumentSource;
-import com.learn.assistant.rag.etl.e.PdfDocumentSource;
+import com.learn.assistant.rag.etl.e.ExtractReader;
+import com.learn.assistant.rag.etl.e.PdfExtract;
 import com.learn.assistant.rag.etl.e.SourceRead;
 import com.learn.assistant.rag.vectorstore.ChunkFingerprint;
+import com.learn.assistant.service.DocumentIngestService;
 import com.learn.assistant.properties.RagProperties;
 import com.learn.assistant.service.FileIngest;
 import com.learn.assistant.service.IngestResult;
@@ -50,7 +53,7 @@ class DocumentIngestServiceTest {
 
     @Test
     void returnsZeroWhenNoPdf() {
-        PdfDocumentSource source = mock(PdfDocumentSource.class);
+        DocumentSource source = mock(DocumentSource.class);
         VectorStore vectorStore = mock(VectorStore.class);
         when(source.load()).thenReturn(SourceRead.documents(List.of()));
         DocumentIngestService service = service(List.of(source), vectorStore, mock(JdbcTemplate.class));
@@ -64,13 +67,13 @@ class DocumentIngestServiceTest {
 
     @Test
     void splitsAndStoresDocuments() {
-        PdfDocumentSource source = mock(PdfDocumentSource.class);
+        DocumentSource source = mock(DocumentSource.class);
         VectorStore vectorStore = mock(VectorStore.class);
         when(source.load()).thenReturn(SourceRead.documents(
                 List.of(new Document("第一句。第二句。第三句。第四句。第五句。"))));
         TokenTextSplitter splitter = splitter();
         DocumentIngestService service = new DocumentIngestService(List.of(source), splitter, vectorStore,
-                mock(JdbcTemplate.class), new PgVectorStoreProperties(), contents -> Set.of(), null);
+                mock(JdbcTemplate.class), new PgVectorStoreProperties(), contents -> Set.of(), unusedFiles(), unusedExtracts());
 
         int count = service.ingest().added();
 
@@ -113,7 +116,7 @@ class DocumentIngestServiceTest {
         PgVectorStoreProperties properties = new PgVectorStoreProperties();
         properties.setTableName("vector_store;drop");
         DocumentIngestService service = new DocumentIngestService(List.of(), splitter(), mock(VectorStore.class),
-                jdbcTemplate, properties, contents -> Set.of(), null);
+                jdbcTemplate, properties, contents -> Set.of(), unusedFiles(), unusedExtracts());
 
         assertThrows(IllegalArgumentException.class, service::clear);
         verify(jdbcTemplate, never()).update(org.mockito.ArgumentMatchers.anyString());
@@ -142,7 +145,7 @@ class DocumentIngestServiceTest {
         when(source.load()).thenReturn(SourceRead.documents(
                 List.of(new Document("同一段资料。"), new Document("同一段资料。"))));
         DocumentIngestService service = new DocumentIngestService(List.of(source), wideSplitter(), vectorStore,
-                mock(JdbcTemplate.class), new PgVectorStoreProperties(), contents -> Set.of(), null);
+                mock(JdbcTemplate.class), new PgVectorStoreProperties(), contents -> Set.of(), unusedFiles(), unusedExtracts());
 
         IngestResult result = service.ingest();
 
@@ -161,7 +164,7 @@ class DocumentIngestServiceTest {
         when(source.load()).thenReturn(SourceRead.documents(
                 List.of(new Document("已经在库里。"), new Document("这次是新的。"))));
         DocumentIngestService service = new DocumentIngestService(List.of(source), wideSplitter(), vectorStore,
-                mock(JdbcTemplate.class), new PgVectorStoreProperties(), contents -> Set.of("已经在库里。"), null);
+                mock(JdbcTemplate.class), new PgVectorStoreProperties(), contents -> Set.of("已经在库里。"), unusedFiles(), unusedExtracts());
 
         IngestResult result = service.ingest();
 
@@ -177,10 +180,10 @@ class DocumentIngestServiceTest {
         VectorStore vectorStore = mock(VectorStore.class);
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         when(source.load()).thenReturn(SourceRead.documents(List.of(new Document("同一段资料。",
-                Map.of(PdfDocumentSource.SOURCE_FILE, "课程/笔记.pdf")))));
+                Map.of(PdfExtract.SOURCE_FILE, "课程/笔记.pdf")))));
         when(jdbcTemplate.update(contains("source_file"), eq("课程/笔记.pdf"))).thenReturn(2);
         DocumentIngestService service = new DocumentIngestService(List.of(source), wideSplitter(), vectorStore,
-                jdbcTemplate, new PgVectorStoreProperties(), contents -> Set.of(), null);
+                jdbcTemplate, new PgVectorStoreProperties(), contents -> Set.of(), unusedFiles(), unusedExtracts());
 
         IngestResult result = service.ingest();
 
@@ -194,13 +197,13 @@ class DocumentIngestServiceTest {
         VectorStore vectorStore = mock(VectorStore.class);
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         when(source.load()).thenReturn(new SourceRead(
-                List.of(new Document("这次是新的。", Map.of(PdfDocumentSource.SOURCE_FILE, "新.pdf")),
-                        new Document("已经在库里。", Map.of(PdfDocumentSource.SOURCE_FILE, "旧.pdf"))),
+                List.of(new Document("这次是新的。", Map.of(PdfExtract.SOURCE_FILE, "新.pdf")),
+                        new Document("已经在库里。", Map.of(PdfExtract.SOURCE_FILE, "旧.pdf"))),
                 List.of(new SourceRead.Failure("坏.pdf", "无法读取"))));
         when(jdbcTemplate.update(contains("source_file"), eq("新.pdf"))).thenReturn(0);
         when(jdbcTemplate.update(contains("source_file"), eq("旧.pdf"))).thenReturn(0);
         DocumentIngestService service = new DocumentIngestService(List.of(source), wideSplitter(), vectorStore,
-                jdbcTemplate, new PgVectorStoreProperties(), contents -> Set.of("已经在库里。"), null);
+                jdbcTemplate, new PgVectorStoreProperties(), contents -> Set.of("已经在库里。"), unusedFiles(), unusedExtracts());
 
         IngestResult result = service.ingest();
 
@@ -220,11 +223,11 @@ class DocumentIngestServiceTest {
         VectorStore vectorStore = mock(VectorStore.class);
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         when(source.load()).thenReturn(SourceRead.documents(List.of(new Document("同一段资料。",
-                Map.of(PdfDocumentSource.SOURCE_FILE, "课程/笔记.pdf")))));
+                Map.of(PdfExtract.SOURCE_FILE, "课程/笔记.pdf")))));
         when(jdbcTemplate.query(contains("chunkHash"), any(RowMapper.class), eq("课程/笔记.pdf")))
                 .thenReturn(List.of(ChunkFingerprint.hash("同一段资料。")));
         DocumentIngestService service = new DocumentIngestService(List.of(source), wideSplitter(), vectorStore,
-                jdbcTemplate, new PgVectorStoreProperties(), contents -> Set.of(), null);
+                jdbcTemplate, new PgVectorStoreProperties(), contents -> Set.of(), unusedFiles(), unusedExtracts());
 
         IngestResult result = service.ingest();
 
@@ -317,9 +320,7 @@ class DocumentIngestServiceTest {
         Files.writeString(classes, "copy");
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         when(jdbcTemplate.update(contains("source_file"), eq("笔记.pdf"))).thenReturn(4);
-        PdfDocumentSource source = new PdfDocumentSource(new RootedPaths(root));
-        DocumentIngestService service = new DocumentIngestService(List.of(source), wideSplitter(),
-                mock(VectorStore.class), jdbcTemplate, new PgVectorStoreProperties(), contents -> Set.of(), source);
+        DocumentIngestService service = libraryService(root, mock(VectorStore.class), jdbcTemplate);
 
         LibraryRemoval removal = service.delete("笔记.pdf");
 
@@ -341,15 +342,25 @@ class DocumentIngestServiceTest {
     }
 
     private static DocumentIngestService libraryService(Path root, VectorStore vectorStore, JdbcTemplate jdbcTemplate) {
-        PdfDocumentSource source = new PdfDocumentSource(new RootedPaths(root));
-        return new DocumentIngestService(List.of(source), wideSplitter(), vectorStore, jdbcTemplate,
-                new PgVectorStoreProperties(), contents -> Set.of(), source);
+        ProjectPaths paths = new RootedPaths(root);
+        return new DocumentIngestService(List.of(), wideSplitter(), vectorStore, jdbcTemplate,
+                new PgVectorStoreProperties(), contents -> Set.of(),
+                new FileStoreRouter(List.of(new PdfFileStore(paths))),
+                new ExtractReader(List.of(new PdfExtract(paths))));
     }
 
     private static DocumentIngestService service(List<DocumentSource> sources, VectorStore vectorStore,
             JdbcTemplate jdbcTemplate) {
         return new DocumentIngestService(sources, splitter(), vectorStore, jdbcTemplate, new PgVectorStoreProperties(),
-                contents -> Set.of(), null);
+                contents -> Set.of(), unusedFiles(), unusedExtracts());
+    }
+
+    private static FileStoreRouter unusedFiles() {
+        return new FileStoreRouter(List.of());
+    }
+
+    private static ExtractReader unusedExtracts() {
+        return new ExtractReader(List.of());
     }
 
     private static TokenTextSplitter splitter() {

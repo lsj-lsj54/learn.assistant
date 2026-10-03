@@ -8,6 +8,7 @@ import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.net.URI;
@@ -16,10 +17,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
 /** 从 classpath 和资料目录读取 PDF，转成文档。 */
+@Component
 public class PdfExtract implements Extract {
 
   private static final Logger log = LoggerFactory.getLogger(PdfExtract.class);
@@ -34,6 +37,12 @@ public class PdfExtract implements Extract {
     this.projectPaths = projectPaths;
   }
 
+  @Override
+  public boolean supports(String name) {
+    return name != null && name.toLowerCase(Locale.ROOT).endsWith(".pdf");
+  }
+
+  @Override
   public SourceRead load() {
     List<Document> documents = new ArrayList<>();
     List<SourceRead.Failure> failures = new ArrayList<>();

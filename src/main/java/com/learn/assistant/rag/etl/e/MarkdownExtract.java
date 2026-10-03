@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -33,6 +34,11 @@ public class MarkdownExtract implements Extract {
 
   public MarkdownExtract(ProjectPaths projectPaths) {
     this.projectPaths = projectPaths;
+  }
+
+  @Override
+  public boolean supports(String name) {
+    return name != null && name.toLowerCase(Locale.ROOT).endsWith(".md");
   }
 
   public SourceRead load() {

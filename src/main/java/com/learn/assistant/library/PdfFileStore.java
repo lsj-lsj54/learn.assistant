@@ -1,71 +1,52 @@
-package com.learn.assistant.rag.etl.e;
+package com.learn.assistant.library;
 
 import com.learn.assistant.tool.ProjectPaths;
-import org.springframework.ai.document.Document;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.annotation.Order;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 @Component
-@Order(0)
-public class PdfDocumentSource implements DocumentSource {
+public class PdfFileStore implements FileStore {
 
-  public static final String SOURCE_FILE = PdfExtract.SOURCE_FILE;
+  static final int MAX_PDF_BYTES = 20 * 1024 * 1024;
 
   private final ProjectPaths projectPaths;
 
-  private final PdfExtract extract;
-
-  private final ExtractRouter router;
-
-  public PdfDocumentSource() {
-    this(new ProjectPaths("src/main/resources/pdf", "res"));
-  }
-
-  @Autowired
-  public PdfDocumentSource(ProjectPaths projectPaths) {
+  public PdfFileStore(ProjectPaths projectPaths) {
     this.projectPaths = projectPaths;
-    this.extract = new PdfExtract(projectPaths);
-    this.router = new ExtractRouter(extract);
   }
 
   @Override
-  public SourceRead load() {
-    return router.load();
+  public boolean supports(String path) {
+    return path != null && path.toLowerCase(Locale.ROOT).endsWith(".pdf");
   }
 
-  public List<Document> read() {
-    return extract.read();
-  }
-
-  public SourceRead readFile(Path path, String sourceName) {
-    String safe = normalizePdfName(sourceName);
-    if (path == null || !Files.isRegularFile(path)) {
-      return new SourceRead(List.of(), List.of(new SourceRead.Failure(safe, "文件不存在")));
-    }
-    return extract.read(safe, new FileSystemResource(path));
-  }
-
-  public String normalizePdfName(String raw) {
-    String safe = projectPaths.safeRelative(raw);
+  @Override
+  public String normalize(String path) {
+    String safe = projectPaths.safeRelative(path);
     if (!safe.toLowerCase(Locale.ROOT).endsWith(".pdf")) {
       throw new IllegalArgumentException("只接受 PDF 文件");
     }
     return safe;
   }
 
+  @Override
+  public void check(byte[] content) {
+    if (content.length > MAX_PDF_BYTES) {
+      throw new IllegalArgumentException("PDF 超过 20MB");
+    }
+    if (!isPdf(content)) {
+      throw new IllegalArgumentException("文件不是 PDF");
+    }
+  }
+
+  @Override
   public void place(Path source, String relative) throws IOException {
-    String safe = normalizePdfName(relative);
+    String safe = normalize(relative);
     Path target = projectPaths.resolveWithin(projectPaths.pdfDirectory(), safe);
     Path parent = target.getParent();
     if (parent != null) {
@@ -79,8 +60,9 @@ public class PdfDocumentSource implements DocumentSource {
     }
   }
 
-  public boolean deleteStored(String relative) throws IOException {
-    String safe = normalizePdfName(relative);
+  @Override
+  public boolean delete(String relative) throws IOException {
+    String safe = normalize(relative);
     boolean removed = false;
     Path library = projectPaths.pdfDirectory().toAbsolutePath().normalize();
     Path target = projectPaths.resolveWithin(library, safe);
@@ -102,7 +84,11 @@ public class PdfDocumentSource implements DocumentSource {
     return removed;
   }
 
-  Map<String, Resource> collect() {
-    return extract.collect();
+  private static boolean isPdf(byte[] content) {
+    return content.length >= 4
+        && content[0] == '%'
+        && content[1] == 'P'
+        && content[2] == 'D'
+        && content[3] == 'F';
   }
 }

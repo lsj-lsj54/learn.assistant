@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -32,6 +33,11 @@ public class HtmlExtract implements Extract {
 
   public HtmlExtract(ProjectPaths projectPaths) {
     this.projectPaths = projectPaths;
+  }
+
+  @Override
+  public boolean supports(String name) {
+    return name != null && name.toLowerCase(Locale.ROOT).endsWith(".html");
   }
 
   public SourceRead load() {

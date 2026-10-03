@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -34,6 +35,12 @@ public class TextExtract implements Extract {
     this.projectPaths = projectPaths;
   }
 
+  @Override
+  public boolean supports(String name) {
+    return name != null && name.toLowerCase(Locale.ROOT).endsWith(".txt");
+  }
+
+  @Override
   public SourceRead load() {
     List<Document> documents = new ArrayList<>();
     List<SourceRead.Failure> failures = new ArrayList<>();

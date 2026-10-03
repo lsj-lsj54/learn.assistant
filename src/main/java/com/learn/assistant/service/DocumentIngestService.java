@@ -1,7 +1,9 @@
-package com.learn.assistant.rag.etl;
+package com.learn.assistant.service;
 
+import com.learn.assistant.library.FileStoreRouter;
 import com.learn.assistant.rag.etl.e.DocumentSource;
-import com.learn.assistant.rag.etl.e.PdfDocumentSource;
+import com.learn.assistant.rag.etl.e.ExtractReader;
+import com.learn.assistant.rag.etl.e.PdfExtract;
 import com.learn.assistant.rag.etl.e.SourceRead;
 import com.learn.assistant.rag.etl.l.LoadRouter;
 import com.learn.assistant.rag.etl.l.VectorStoreLoad;
@@ -10,17 +12,13 @@ import com.learn.assistant.rag.etl.t.TransformRouter;
 import com.learn.assistant.rag.vectorstore.ChunkFingerprint;
 import com.learn.assistant.rag.vectorstore.PgVectorCatalog;
 import com.learn.assistant.rag.vectorstore.StoredChunkLookup;
-import com.learn.assistant.service.DocumentIngestor;
-import com.learn.assistant.service.FileIngest;
-import com.learn.assistant.service.IngestResult;
-import com.learn.assistant.service.LibraryFile;
-import com.learn.assistant.service.LibraryRemoval;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreProperties;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -40,8 +38,6 @@ public class DocumentIngestService implements DocumentIngestor {
 
   private static final Logger log = LoggerFactory.getLogger(DocumentIngestService.class);
 
-  static final int MAX_PDF_BYTES = 20 * 1024 * 1024;
-
   private final List<DocumentSource> documentSources;
 
   private final TransformRouter transformRouter;
@@ -52,7 +48,9 @@ public class DocumentIngestService implements DocumentIngestor {
 
   private final StoredChunkLookup storedChunkLookup;
 
-  private final PdfDocumentSource pdfDocumentSource;
+  private final FileStoreRouter files;
+
+  private final ExtractReader extracts;
 
   private final Object storeLock = new Object();
 
@@ -63,13 +61,15 @@ public class DocumentIngestService implements DocumentIngestor {
       JdbcTemplate jdbcTemplate,
       PgVectorStoreProperties vectorStoreProperties,
       StoredChunkLookup storedChunkLookup,
-      PdfDocumentSource pdfDocumentSource) {
+      FileStoreRouter files,
+      ExtractReader extracts) {
     this.documentSources = List.copyOf(documentSources);
     this.transformRouter = new TransformRouter(new TokenChunkTransform(tokenTextSplitter));
     this.loadRouter = new LoadRouter(new VectorStoreLoad(vectorStore));
     this.vectorCatalog = new PgVectorCatalog(jdbcTemplate, vectorStoreProperties);
     this.storedChunkLookup = storedChunkLookup;
-    this.pdfDocumentSource = pdfDocumentSource;
+    this.files = files;
+    this.extracts = extracts;
   }
 
   @Override
@@ -84,19 +84,15 @@ public class DocumentIngestService implements DocumentIngestor {
   @Override
   public List<LibraryFile> list() {
     synchronized (storeLock) {
-      return listFiles();
+      return vectorCatalog.listFiles();
     }
-  }
-
-  private List<LibraryFile> listFiles() {
-    return vectorCatalog.listFiles();
   }
 
   @Override
   public LibraryRemoval delete(String file) {
-    String relative = pdfs().normalizePdfName(file);
+    String relative = files.normalize(file);
     synchronized (storeLock) {
-      int deleted = deleteBySourceFile(relative);
+      int deleted = vectorCatalog.deleteBySourceFile(relative);
       boolean removed = deleteFile(relative);
       log.info("已删除资料 {}，向量 {} 条", relative, deleted);
       return new LibraryRemoval(relative, deleted, removed);
@@ -108,24 +104,19 @@ public class DocumentIngestService implements DocumentIngestor {
     if (content == null || content.length == 0) {
       throw new IllegalArgumentException("文件是空的");
     }
-    if (content.length > MAX_PDF_BYTES) {
-      throw new IllegalArgumentException("PDF 超过 20MB");
-    }
-    if (!isPdf(content)) {
-      throw new IllegalArgumentException("文件不是 PDF");
-    }
-    String relative = pdfs().normalizePdfName(path);
+    files.check(path, content);
+    String relative = files.normalize(path);
     synchronized (storeLock) {
       Path temp = createTemp();
       try {
         Files.write(temp, content);
-        SourceRead read = pdfs().readFile(temp, relative);
+        SourceRead read = extracts.read(relative, new FileSystemResource(temp));
         if (!read.failures().isEmpty()) {
           SourceRead.Failure failure = read.failures().get(0);
           return new IngestResult(
               0, 0, List.of(FileIngest.failed(failure.file(), failure.message())));
         }
-        pdfs().place(temp, relative);
+        files.place(temp, relative);
         temp = null;
         FileIngest outcome = ingestPages(relative, read.documents());
         log.info("已保存 {}", relative);
@@ -141,7 +132,7 @@ public class DocumentIngestService implements DocumentIngestor {
   @Override
   public IngestResult ingest() {
     synchronized (storeLock) {
-      int removed = collapseDuplicates();
+      int removed = vectorCatalog.collapseDuplicates();
       if (removed > 0) {
         log.info("已删掉库里重复的 {} 条", removed);
       }
@@ -192,7 +183,7 @@ public class DocumentIngestService implements DocumentIngestor {
     if (sameChunks(file, hashes)) {
       return FileIngest.skipped(file, hashes.size(), "内容没有变化");
     }
-    deleteBySourceFile(file);
+    vectorCatalog.deleteBySourceFile(file);
     IngestResult stored = storeNewChunks(chunks);
     if (stored.added() > 0) {
       return FileIngest.added(file, stored.added(), stored.skipped());
@@ -235,34 +226,15 @@ public class DocumentIngestService implements DocumentIngestor {
   }
 
   private boolean sameChunks(String file, List<String> hashes) {
-    return normalizeHashes(hashesOf(file)).equals(normalizeHashes(hashes));
-  }
-
-  private List<String> hashesOf(String file) {
-    return vectorCatalog.hashesOf(file);
-  }
-
-  private int deleteBySourceFile(String file) {
-    return vectorCatalog.deleteBySourceFile(file);
-  }
-
-  private int collapseDuplicates() {
-    return vectorCatalog.collapseDuplicates();
+    return normalizeHashes(vectorCatalog.hashesOf(file)).equals(normalizeHashes(hashes));
   }
 
   private boolean deleteFile(String relative) {
     try {
-      return pdfs().deleteStored(relative);
+      return files.delete(relative);
     } catch (IOException exception) {
       throw new IllegalStateException("删除 PDF 失败");
     }
-  }
-
-  private PdfDocumentSource pdfs() {
-    if (pdfDocumentSource == null) {
-      throw new IllegalStateException("没有 PDF 目录");
-    }
-    return pdfDocumentSource;
   }
 
   private static Path createTemp() {
@@ -282,14 +254,6 @@ public class DocumentIngestService implements DocumentIngestor {
     } catch (IOException ignored) {
       // 副本已经写入资料目录，临时文件留给系统清理
     }
-  }
-
-  private static boolean isPdf(byte[] content) {
-    return content.length >= 4
-        && content[0] == '%'
-        && content[1] == 'P'
-        && content[2] == 'D'
-        && content[3] == 'F';
   }
 
   private static List<String> distinctHashes(List<Document> chunks) {
@@ -323,7 +287,7 @@ public class DocumentIngestService implements DocumentIngestor {
   }
 
   private static String sourceFile(Document document) {
-    Object value = document.getMetadata().get(PdfDocumentSource.SOURCE_FILE);
+    Object value = document.getMetadata().get(PdfExtract.SOURCE_FILE);
     return value instanceof String file ? file : "";
   }
 
