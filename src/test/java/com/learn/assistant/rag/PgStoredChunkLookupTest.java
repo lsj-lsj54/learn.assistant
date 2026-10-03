@@ -1,5 +1,7 @@
 package com.learn.assistant.rag;
 
+import com.learn.assistant.rag.vectorstore.PgStoredChunkLookup;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreProperties;
 import org.springframework.jdbc.core.JdbcTemplate;

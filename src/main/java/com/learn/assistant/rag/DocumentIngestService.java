@@ -4,6 +4,8 @@ import com.learn.assistant.rag.etl.l.LoadRouter;
 import com.learn.assistant.rag.etl.l.VectorStoreLoad;
 import com.learn.assistant.rag.etl.t.TokenChunkTransform;
 import com.learn.assistant.rag.etl.t.TransformRouter;
+import com.learn.assistant.rag.vectorstore.PgVectorCatalog;
+import com.learn.assistant.rag.vectorstore.StoredChunkLookup;
 import com.learn.assistant.service.DocumentIngestor;
 import com.learn.assistant.service.FileIngest;
 import com.learn.assistant.service.IngestResult;
@@ -42,9 +44,7 @@ public class DocumentIngestService implements DocumentIngestor {
 
   private final LoadRouter loadRouter;
 
-  private final JdbcTemplate jdbcTemplate;
-
-  private final PgVectorStoreProperties vectorStoreProperties;
+  private final PgVectorCatalog vectorCatalog;
 
   private final StoredChunkLookup storedChunkLookup;
 
@@ -63,8 +63,7 @@ public class DocumentIngestService implements DocumentIngestor {
     this.documentSources = List.copyOf(documentSources);
     this.transformRouter = new TransformRouter(new TokenChunkTransform(tokenTextSplitter));
     this.loadRouter = new LoadRouter(new VectorStoreLoad(vectorStore));
-    this.jdbcTemplate = jdbcTemplate;
-    this.vectorStoreProperties = vectorStoreProperties;
+    this.vectorCatalog = new PgVectorCatalog(jdbcTemplate, vectorStoreProperties);
     this.storedChunkLookup = storedChunkLookup;
     this.pdfDocumentSource = pdfDocumentSource;
   }
@@ -72,8 +71,7 @@ public class DocumentIngestService implements DocumentIngestor {
   @Override
   public int clear() {
     synchronized (storeLock) {
-      String sql = "DELETE FROM " + VectorTables.qualified(vectorStoreProperties);
-      int deleted = jdbcTemplate.update(sql);
+      int deleted = vectorCatalog.clear();
       log.info("已清空向量 {} 条", deleted);
       return deleted;
     }
@@ -87,19 +85,7 @@ public class DocumentIngestService implements DocumentIngestor {
   }
 
   private List<LibraryFile> listFiles() {
-    String sql =
-        "SELECT metadata->>'source_file' AS file, COUNT(*) AS chunks, "
-            + "COUNT(DISTINCT metadata->>'page_number') AS pages FROM "
-            + VectorTables.qualified(vectorStoreProperties)
-            + " WHERE metadata->>'source_file' IS NOT NULL AND metadata->>'source_file' <> '' "
-            + "GROUP BY metadata->>'source_file' ORDER BY metadata->>'source_file'";
-    List<LibraryFile> files =
-        jdbcTemplate.query(
-            sql,
-            (result, row) ->
-                new LibraryFile(
-                    result.getString("file"), result.getInt("pages"), result.getInt("chunks")));
-    return files == null ? List.of() : files;
+    return vectorCatalog.listFiles();
   }
 
   @Override
@@ -249,35 +235,15 @@ public class DocumentIngestService implements DocumentIngestor {
   }
 
   private List<String> hashesOf(String file) {
-    String sql =
-        "SELECT metadata->>'chunkHash' FROM "
-            + VectorTables.qualified(vectorStoreProperties)
-            + " WHERE metadata->>'source_file' = ?";
-    List<String> stored = jdbcTemplate.query(sql, (result, row) -> result.getString(1), file);
-    return stored == null ? List.of() : stored;
+    return vectorCatalog.hashesOf(file);
   }
 
   private int deleteBySourceFile(String file) {
-    if (file == null || file.isBlank()) {
-      return 0;
-    }
-    String sql =
-        "DELETE FROM "
-            + VectorTables.qualified(vectorStoreProperties)
-            + " WHERE metadata->>'source_file' = ?";
-    return jdbcTemplate.update(sql, file);
+    return vectorCatalog.deleteBySourceFile(file);
   }
 
   private int collapseDuplicates() {
-    String table = VectorTables.qualified(vectorStoreProperties);
-    String sql =
-        "DELETE FROM "
-            + table
-            + " AS extra USING "
-            + table
-            + " AS kept "
-            + "WHERE extra.content = kept.content AND extra.ctid > kept.ctid";
-    return jdbcTemplate.update(sql);
+    return vectorCatalog.collapseDuplicates();
   }
 
   private boolean deleteFile(String relative) {
