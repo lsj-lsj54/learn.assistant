@@ -1,4 +1,4 @@
-package com.learn.assistant.service;
+package com.learn.assistant.rag.etl;
 
 import java.util.List;
 

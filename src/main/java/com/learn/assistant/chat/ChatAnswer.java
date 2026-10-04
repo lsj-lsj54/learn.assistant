@@ -1,4 +1,4 @@
-package com.learn.assistant.service;
+package com.learn.assistant.chat;
 
 import com.learn.assistant.domain.vo.ChatSource;
 

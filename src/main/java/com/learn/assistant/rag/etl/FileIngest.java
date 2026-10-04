@@ -1,4 +1,4 @@
-package com.learn.assistant.service;
+package com.learn.assistant.rag.etl;
 
 public record FileIngest(String file, String status, int added, int skipped, String message) {
 

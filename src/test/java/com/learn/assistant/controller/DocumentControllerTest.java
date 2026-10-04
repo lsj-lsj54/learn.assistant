@@ -1,10 +1,10 @@
 package com.learn.assistant.controller;
 
 import com.learn.assistant.service.DocumentIngestor;
-import com.learn.assistant.service.FileIngest;
-import com.learn.assistant.service.IngestResult;
-import com.learn.assistant.service.LibraryFile;
-import com.learn.assistant.service.LibraryRemoval;
+import com.learn.assistant.library.LibraryRemoval;
+import com.learn.assistant.rag.etl.FileIngest;
+import com.learn.assistant.rag.etl.IngestResult;
+import com.learn.assistant.rag.vectorstore.LibraryFile;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

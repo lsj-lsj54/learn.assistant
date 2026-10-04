@@ -5,7 +5,7 @@ import com.learn.assistant.chat.ChatPiece;
 import com.learn.assistant.chat.ChatSources;
 import com.learn.assistant.domain.dto.ChatRequest;
 import com.learn.assistant.domain.vo.ChatResponse;
-import com.learn.assistant.service.ChatAnswer;
+import com.learn.assistant.chat.ChatAnswer;
 import com.learn.assistant.service.ChatService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;

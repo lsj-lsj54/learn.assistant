@@ -1,6 +1,5 @@
 package com.learn.assistant.rag.vectorstore;
 
-import com.learn.assistant.service.LibraryFile;
 import org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreProperties;
 import org.springframework.jdbc.core.JdbcTemplate;
 

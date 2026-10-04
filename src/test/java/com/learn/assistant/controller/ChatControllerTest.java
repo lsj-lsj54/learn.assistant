@@ -2,7 +2,7 @@ package com.learn.assistant.controller;
 
 import com.learn.assistant.chat.ChatMode;
 import com.learn.assistant.chat.ChatPiece;
-import com.learn.assistant.service.ChatAnswer;
+import com.learn.assistant.chat.ChatAnswer;
 import com.learn.assistant.service.ChatService;
 import com.learn.assistant.tool.activity.ToolStep;
 import org.junit.jupiter.api.BeforeEach;

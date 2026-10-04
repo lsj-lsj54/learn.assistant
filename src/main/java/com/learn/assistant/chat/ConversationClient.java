@@ -1,7 +1,5 @@
-package com.learn.assistant.service;
+package com.learn.assistant.chat;
 
-import com.learn.assistant.chat.ChatMode;
-import com.learn.assistant.chat.ChatPiece;
 import reactor.core.publisher.Flux;
 
 public interface ConversationClient {

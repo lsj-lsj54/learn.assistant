@@ -2,8 +2,6 @@ package com.learn.assistant.chat;
 
 import com.learn.assistant.prompts.ChatPrompts;
 import com.learn.assistant.properties.ChatProperties;
-import com.learn.assistant.service.ChatAnswer;
-import com.learn.assistant.service.ConversationClient;
 import com.learn.assistant.tool.activity.ToolActivity;
 import com.learn.assistant.tool.activity.ToolNames;
 import com.learn.assistant.tool.activity.ToolStep;
