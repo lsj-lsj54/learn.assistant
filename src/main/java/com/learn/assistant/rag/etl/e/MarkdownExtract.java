@@ -41,6 +41,11 @@ public class MarkdownExtract implements Extract {
     return name != null && name.toLowerCase(Locale.ROOT).endsWith(".md");
   }
 
+  @Override
+  public String fileType() {
+    return "Markdown";
+  }
+
   public SourceRead load() {
     List<Document> documents = new ArrayList<>();
     List<SourceRead.Failure> failures = new ArrayList<>();

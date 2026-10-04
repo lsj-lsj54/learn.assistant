@@ -40,6 +40,11 @@ public class JsonExtract implements Extract {
     return name != null && name.toLowerCase(Locale.ROOT).endsWith(".json");
   }
 
+  @Override
+  public String fileType() {
+    return "Json";
+  }
+
   public SourceRead load() {
     List<Document> documents = new ArrayList<>();
     List<SourceRead.Failure> failures = new ArrayList<>();

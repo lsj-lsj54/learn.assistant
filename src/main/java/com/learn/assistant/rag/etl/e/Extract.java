@@ -7,5 +7,7 @@ public interface Extract {
 
   boolean supports(String name);
 
+  String fileType();
+
   SourceRead read(String name, Resource resource);
 }

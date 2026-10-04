@@ -43,6 +43,11 @@ public class PdfExtract implements Extract {
   }
 
   @Override
+  public String fileType() {
+    return "Pdf";
+  }
+
+  @Override
   public SourceRead load() {
     List<Document> documents = new ArrayList<>();
     List<SourceRead.Failure> failures = new ArrayList<>();

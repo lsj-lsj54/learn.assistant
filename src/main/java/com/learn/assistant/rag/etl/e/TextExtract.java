@@ -41,6 +41,11 @@ public class TextExtract implements Extract {
   }
 
   @Override
+  public String fileType() {
+    return "Text";
+  }
+
+  @Override
   public SourceRead load() {
     List<Document> documents = new ArrayList<>();
     List<SourceRead.Failure> failures = new ArrayList<>();
